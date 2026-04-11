@@ -1,0 +1,170 @@
+.stage {
+  perspective: 1400px;
+  text-align: center;
+}
+
+.glow-wrapper {
+  position: relative;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.glow {
+  font-size: clamp(2.8rem, 4vw + 1rem, 4.6rem);
+  letter-spacing: 0.2rem;
+  text-transform: uppercase;
+  background: linear-gradient(110deg, #ffffff, #ffd672 40%, #f5a623 70%, #ffc343);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: zoomPulse 12s ease-in-out infinite;
+  text-shadow:
+    0 0 8px rgba(255, 255, 255, 0.4),
+    0 0 20px rgba(255, 210, 110, 0.4);
+}
+/* ========= SPLASH GLITTER EFFECT ========= */
+.splash-glitter-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9;
+}
+
+.splash-glitter {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffd700, #daa520);
+  box-shadow:
+    0 0 10px rgba(255, 215, 0, 1),
+    0 0 20px rgba(218, 165, 32, 0.8);
+  animation: splash-burst 1.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.splash-glitter.large {
+  width: 6px;
+  height: 6px;
+}
+/* ===============================
+   HOLLOW SPACE ROTATION EFFECT
+================================ */
+
+/* Wrapper that rotates in 3D space */
+.glow-wrapper {
+  transform-style: preserve-3d;
+  animation: hollow-rotation 28s linear infinite;
+}
+
+/* Subtle counter-motion for realism */
+.glow {
+  animation:
+    zoom-pulse-slow 12s ease-in-out infinite,
+    text-twinkle 3s ease-in-out infinite,
+    inner-drift 9s ease-in-out infinite;
+}
+
+/* Outer slow rotation (space-like) */
+@keyframes hollow-rotation {
+  0% {
+    transform: rotateY(0deg) rotateX(0deg);
+  }
+  25% {
+    transform: rotateY(90deg) rotateX(4deg);
+  }
+  50% {
+    transform: rotateY(180deg) rotateX(0deg);
+  }
+  75% {
+    transform: rotateY(270deg) rotateX(-4deg);
+  }
+  100% {
+    transform: rotateY(360deg) rotateX(0deg);
+  }
+}
+
+/* Inner micro floating drift */
+@keyframes inner-drift {
+  0%, 100% {
+    transform: translateZ(0px);
+  }
+  50% {
+    transform: translateZ(20px);
+  }
+}
+
+
+@keyframes splash-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+    filter: blur(0px);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(0);
+    filter: blur(3px);
+  }
+}
+
+
+@keyframes zoomPulse {
+  0%, 100% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+.sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.6) 0%, transparent 40%),
+    radial-gradient(circle, rgba(255,175,80,0.4) 0%, transparent 45%);
+  background-position: 20% 30%, 80% 60%;
+  background-repeat: no-repeat;
+  animation: shimmer 6s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+.floating-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.12;
+  animation: floatOrb 16s infinite ease-in-out;
+}
+
+.orb-1 { width: 300px; height: 300px; background: #daa520; top: 15%; left: 10%; }
+.orb-2 { width: 260px; height: 260px; background: #c9a961; bottom: 20%; right: 12%; animation-delay: 6s; }
+.orb-3 { width: 220px; height: 220px; background: #8b6914; top: 50%; right: 5%; animation-delay: 10s; }
+
+@keyframes floatOrb {
+  50% { transform: translateY(-40px); }
+}
+
+.glitter-container { pointer-events: none; }
+
+.subtitle {
+  letter-spacing: 0.15rem;
+  animation: fadeUp 1s ease-out forwards;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
