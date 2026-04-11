@@ -401,7 +401,9 @@ const AdminDashboard = () => {
     try {
       const res = await fetch(`${API}/${editProduct._id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${user?.token}` }, body: JSON.stringify({ ...editProduct, price: Number(editProduct.price), originalPrice: editProduct.originalPrice ? Number(editProduct.originalPrice) : undefined, stock: Number(editProduct.stock) }) });
       const data = await res.json(); if (!res.ok) throw new Error(data.message || "Failed to update");
-      toast({ title: "✅ Product Updated", description: `${editProduct.name} updated.` }); setEditProduct(data);
+      toast({ title: "✅ Product Updated", description: `${editProduct.name} updated.` }); 
+      setEditProduct(data);
+      setProducts((prev) => prev.map((p) => (p._id === data._id ? data : p)));
     } catch (err: any) { toast({ title: "Error", description: err.message, variant: "destructive" }); }
     finally { setUpdateLoading(false); }
   };
