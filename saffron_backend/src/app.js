@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import morgan from "morgan";
 import authRoutes from "./routes/authRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
@@ -21,6 +22,12 @@ const app = express();
 
 // Trust proxy for Render/Vercel to get correct IP addresses
 app.set("trust proxy", 1);
+
+// Security Headers
+app.use(helmet({
+    contentSecurityPolicy: false, // Disabled to ensure Swagger UI compatibility
+    crossOriginResourcePolicy: { policy: "cross-origin" } // Allow resources to be loaded across origins
+}));
 
 app.use(morgan("dev"));
 app.use(cors());
