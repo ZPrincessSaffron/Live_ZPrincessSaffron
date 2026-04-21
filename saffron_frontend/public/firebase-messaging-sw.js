@@ -3,14 +3,16 @@ importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js')
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
 // Initialize the Firebase app in the service worker by passing in the
-// messagingSenderId.
+// configuration from the URL parameters.
+const urlParams = new URLSearchParams(self.location.search);
+
 firebase.initializeApp({
-  apiKey: "AIzaSyCaUD_HCYJfOeGDwM6VEIcsGFtpqKhgJcw",
-  authDomain: "zprincess-saffron.firebaseapp.com",
-  projectId: "zprincess-saffron",
-  storageBucket: "zprincess-saffron.firebasestorage.app",
-  messagingSenderId: "644557349672",
-  appId: "1:644557349672:web:b8b9295e0baac46377a61d"
+  apiKey: urlParams.get('apiKey'),
+  authDomain: urlParams.get('authDomain'),
+  projectId: urlParams.get('projectId'),
+  storageBucket: urlParams.get('storageBucket'),
+  messagingSenderId: urlParams.get('messagingSenderId'),
+  appId: urlParams.get('appId')
 });
 
 // Retrieve an instance of Firebase Messaging so that it can handle background
