@@ -15,16 +15,25 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.js";
+import { globalLimiter, authLimiter } from "./middleware/rateLimiter.js";
 
 const app = express();
+
+// Trust proxy for Render/Vercel to get correct IP addresses
+app.set("trust proxy", 1);
+
 app.use(morgan("dev"));
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+// Apply Global Rate Limiting
+app.use("/api", globalLimiter);
+
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.use("/api/auth", authRoutes);
+// Stricter Rate Limiting for Auth Routes
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/reviews", reviewRoutes);
