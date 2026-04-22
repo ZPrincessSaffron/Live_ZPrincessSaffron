@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import helmet from "helmet";
 import morgan from "morgan";
 import authRoutes from "./routes/authRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
@@ -16,51 +15,16 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.js";
-import { globalLimiter, authLimiter } from "./middleware/rateLimiter.js";
 
 const app = express();
-
-// Trust proxy for Render/Vercel to get correct IP addresses
-app.set("trust proxy", 1);
-
-// Security Headers
-app.use(helmet({
-    contentSecurityPolicy: false, // Disabled to ensure Swagger UI compatibility
-    crossOriginResourcePolicy: { policy: "cross-origin" } // Allow resources to be loaded across origins
-}));
-
 app.use(morgan("dev"));
-
-// Restrict CORS to trusted origins
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-    ? process.env.ALLOWED_ORIGINS.split(",") 
-    : ["http://localhost:5173"];
-
-app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes("*")) {
-            callback(null, true);
-        } else {
-            callback(new Error("Not allowed by CORS"));
-        }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-}));
-
+app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-// Apply Global Rate Limiting
-app.use("/api", globalLimiter);
-
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Stricter Rate Limiting for Auth Routes
-app.use("/api/auth", authLimiter, authRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/reviews", reviewRoutes);
