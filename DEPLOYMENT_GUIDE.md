@@ -42,6 +42,7 @@ This guide explains how to configure the necessary environment variables for the
 | `EMAIL_USER` | Gmail address for sending notifications |
 | `EMAIL_PASS` | Gmail App Password (not your regular password) |
 | `GROQ_API_KEY` | Groq AI API Key |
+| `ALLOWED_ORIGINS` | Comma-separated list of trusted frontend URLs |
 | `FIREBASE_SERVICE_ACCOUNT` | **CRITICAL**: The entire JSON content of your firebase service account file as a single-line string. |
 
 ### How to format `FIREBASE_SERVICE_ACCOUNT` for Render:
