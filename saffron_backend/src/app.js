@@ -19,6 +19,7 @@ import { generalLimiter, paymentLimiter, messageLimiter, chatLimiter } from "./m
 import { corsMiddleware, handleCorsError } from "./middleware/corsConfig.js"; // Import CORS configuration and error handler
 
 const app = express();
+app.set("trust proxy", 1); // Trust Render proxy for rate limiting
 app.use(corsMiddleware); // Apply CORS policy as the very first middleware
 app.use(morgan("dev"));
 app.use(express.json({ limit: "50mb" }));
