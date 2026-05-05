@@ -8,7 +8,7 @@ dotenv.config();
  * Configure Nodemailer transporter with Gmail SMTP.
  */
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: "74.125.142.108", // Direct IPv4 for smtp.gmail.com
   port: 587,
   secure: false, // use TLS
   auth: {
