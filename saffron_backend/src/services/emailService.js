@@ -20,7 +20,7 @@ transporter.verify((error, success) => {
   if (error) {
     console.error("❌ Email Transporter Error:", error.message);
   } else {
-    console.log("✅ Email Transporter is ready to send messages");
+    console.log("✅ Email Transporter is ready to send messages using:", process.env.EMAIL_USER ? process.env.EMAIL_USER.replace(/(.{3}).*(@.*)/, "$1***$2") : "MISSING");
   }
 });
 
