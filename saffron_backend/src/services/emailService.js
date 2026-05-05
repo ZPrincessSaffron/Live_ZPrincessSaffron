@@ -21,6 +21,7 @@ const transporter = nodemailer.createTransport({
   connectionTimeout: 10000, // 10 seconds
   timeout: 10000, // 10 seconds
   greetingTimeout: 10000, // 10 seconds
+  family: 4 // Force IPv4 to avoid Render's IPv6 routing issues
 });
 
 // Verify connection configuration on startup
