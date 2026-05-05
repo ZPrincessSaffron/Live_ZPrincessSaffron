@@ -2,8 +2,10 @@ import cors from "cors";
 
 // Define allowed origins from environment variable or hardcoded defaults
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(",")
-    : ["http://localhost:5173", "https://z-princess-saffron.vercel.app", "https://www.zprincesssaffron.com", "https://zprincesssaffron.com"];
+    ? process.env.ALLOWED_ORIGINS.split(",").map(origin => origin.trim())
+    : ["http://localhost:5173", "http://localhost:8080", "https://z-princess-saffron.vercel.app", "https://www.zprincesssaffron.com", "https://zprincesssaffron.com"];
+
+console.log("CORS Allowed Origins:", allowedOrigins);
 
 // CORS configuration middleware
 export const corsMiddleware = cors({
