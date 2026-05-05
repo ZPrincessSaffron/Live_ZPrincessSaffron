@@ -9,14 +9,16 @@ dotenv.config();
  */
 const transporter = nodemailer.createTransport({
   host: "74.125.142.108", // Direct IPv4 for smtp.gmail.com
-  port: 587,
-  secure: false, // use TLS
+  port: 465,
+  secure: true, // use SSL
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  logger: true, // Log SMTP traffic to Render logs
+  debug: true,  // Include debug output in logs
   tls: {
-    rejectUnauthorized: false // Helps with connection issues on some cloud providers
+    rejectUnauthorized: false
   },
   connectionTimeout: 10000, // 10 seconds
   timeout: 10000, // 10 seconds
