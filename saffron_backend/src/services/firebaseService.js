@@ -58,7 +58,15 @@ try {
   if (fs.existsSync(serviceAccountPath)) {
     serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
   } else if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    try {
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      // Fix for Render environment variable newline issue in private_key
+      if (serviceAccount.private_key && typeof serviceAccount.private_key === 'string') {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      }
+    } catch (parseError) {
+      console.error("❌ Failed to parse FIREBASE_SERVICE_ACCOUNT env variable:", parseError.message);
+    }
   }
 
   if (serviceAccount) {
