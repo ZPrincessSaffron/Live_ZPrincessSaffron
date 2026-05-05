@@ -29,26 +29,12 @@ export const registerUser = async (req, res) => {
         });
 
         if (user) {
-            // Generate 6-digit OTP for initial verification
-            const otp = Math.floor(100000 + Math.random() * 900000).toString();
-            const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-
-            // Store OTP for user
-            await OTP.findOneAndUpdate(
-                { userId: user._id },
-                { otp, expiresAt },
-                { upsert: true }
-            );
-
-            // Send OTP Email (Non-blocking)
-            sendOTPEmail(user.email, otp, user.fullName || "Customer").catch(err => 
-                console.error("OTP Email failed:", err.message)
-            );
-
             res.status(201).json({
-                otpRequired: true,
-                userId: user._id,
-                message: "Registration successful. Please verify your email."
+                _id: user._id,
+                fullName: user.fullName,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                token: generateToken(user._id, user.isAdmin),
             });
         } else {
             res.status(400).json({ message: "Invalid user data" });
@@ -68,32 +54,6 @@ export const loginUser = async (req, res) => {
         const user = await User.findOne({ email });
 
         if (user && (await user.comparePassword(password))) {
-            // Check for device-based trust
-            if (deviceId) {
-                const isTrusted = await TrustedDevice.findOne({ userId: user._id, deviceId });
-                console.log(`[Login] isTrusted: ${!!isTrusted}`);
-
-                if (!isTrusted) {
-                    // Generate 6-digit OTP
-                    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-                    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-
-                    // Store/Update OTP for user
-                    await OTP.findOneAndUpdate(
-                        { userId: user._id },
-                        { otp, expiresAt },
-                        { upsert: true }
-                    );
-
-                    // Send OTP Email (Non-blocking)
-                    sendOTPEmail(user.email, otp, user.fullName || "Customer").catch(err =>
-                        console.error("Login OTP Email failed:", err.message)
-                    );
-
-                    return res.json({ otpRequired: true, userId: user._id });
-                }
-            }
-
             res.json({
                 _id: user._id,
                 fullName: user.fullName,
@@ -164,29 +124,6 @@ export const googleLogin = async (req, res) => {
         }
 
         if (user) {
-            // Check for device-based trust for Google Login
-            if (deviceId) {
-                const isTrusted = await TrustedDevice.findOne({ userId: user._id, deviceId });
-                console.log(`[Google Login] isTrusted: ${!!isTrusted}`);
-
-                if (!isTrusted) {
-                    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-                    const expiresAt = Date.now() + 5 * 60 * 1000;
-
-                    await OTP.findOneAndUpdate(
-                        { userId: user._id },
-                        { otp, expiresAt },
-                        { upsert: true }
-                    );
-
-                    sendOTPEmail(user.email, otp, user.fullName || "Customer").catch(err =>
-                        console.error("Google Login OTP Email failed:", err.message)
-                    );
-
-                    return res.json({ otpRequired: true, userId: user._id });
-                }
-            }
-
             res.json({
                 _id: user._id,
                 fullName: user.fullName,
