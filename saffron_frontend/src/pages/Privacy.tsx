@@ -528,8 +528,8 @@ const ContactSection = () => {
             transition={{ delay: 0.35, duration: 0.6 }}
             className='text-[14px]'
           >
-            <MagneticLink href="mailto:zprincessaffron07@gmail.com">
-              zprincessaffron07@gmail.com
+            <MagneticLink href="mailto:Crocus@zprincesssaffron.com">
+              Crocus@zprincesssaffron.com
             </MagneticLink>
           </motion.div>
         </motion.div>

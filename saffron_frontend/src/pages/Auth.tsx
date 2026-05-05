@@ -10,6 +10,7 @@ import {
   Eye,
   EyeOff,
   ArrowLeft,
+  KeyRound,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,11 +24,13 @@ const passwordSchema = z
   .min(6, "Password must be at least 6 characters");
 
 const Auth = () => {
+  console.log("Auth component rendering - Fix Applied");
   const { toast } = useToast();
   const {
     user,
     signUp,
     signIn,
+    verifyOtp,
     signInWithGoogle,
     isLoading: authLoading,
   } = useAuth();
@@ -45,6 +48,26 @@ const Auth = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  // OTP States
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpUserId, setOtpUserId] = useState("");
+  const [deviceId, setDeviceId] = useState("");
+
+  useEffect(() => {
+    setShowOtpInput(false);
+  }, [isLogin]);
+
+  useEffect(() => {
+    // Generate/Get deviceId
+    let id = localStorage.getItem("saffron_device_id");
+    if (!id) {
+      id = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem("saffron_device_id", id);
+    }
+    setDeviceId(id);
+  }, []);
 
   useEffect(() => {
     if (user) navigate("/");
@@ -70,17 +93,34 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (showOtpInput) {
+      return handleOtpSubmit(e);
+    }
+
     if (!validateForm()) return;
 
     setIsLoading(true);
+    let error = null;
+    let data: any = null;
 
     if (isLogin) {
-      const { error } = await signIn(formData.email, formData.password);
+      const result = await signIn(formData.email, formData.password, deviceId);
+      error = result.error;
+      data = result.data;
+
       if (error) {
         toast({
           title: "Sign in failed",
-          description: error.message,
+          description: String(error),
           variant: "destructive",
+        });
+      } else if (data?.otpRequired) {
+        setOtpUserId(data.userId);
+        setShowOtpInput(true);
+        toast({
+          title: "Verification required",
+          description: "A 6-digit OTP has been sent to your email.",
         });
       } else {
         toast({
@@ -89,23 +129,32 @@ const Auth = () => {
         });
 
         // Admin redirect
-        const adminEmails = ["princesssaffron519@gmail.com", "Princesraja555777@gmail.com"];
-        if (adminEmails.includes(formData.email)) {
+        if (data?.isAdmin) {
           navigate("/admin");
         }
       }
     } else {
-      const { error } = await signUp(
+      const result = await signUp(
         formData.email,
         formData.password,
-        formData.name
+        formData.name,
+        deviceId
       );
+      error = result.error;
+      data = result.data;
 
       if (error) {
         toast({
           title: "Sign up failed",
           description: error.message,
           variant: "destructive",
+        });
+      } else if (data?.otpRequired) {
+        setOtpUserId(data.userId);
+        setShowOtpInput(true);
+        toast({
+          title: "Verification required",
+          description: "A 6-digit OTP has been sent to your email to complete registration.",
         });
       } else {
         toast({
@@ -118,21 +167,63 @@ const Auth = () => {
     setIsLoading(false);
   };
 
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.length !== 6) {
+      toast({ title: "Invalid OTP", description: "Please enter a 6-digit code.", variant: "destructive" });
+      return;
+    }
+
+    setIsLoading(true);
+    const { error, data } = await verifyOtp(otpUserId, otp, deviceId);
+
+    if (error) {
+      toast({
+        title: "Verification failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Welcome back!",
+        description: "Device verified and logged in successfully.",
+      });
+
+      if (data?.isAdmin) {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
+    }
+    setIsLoading(false);
+  };
+
   const loginWithGoogle = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setIsGoogleLoading(true);
-      const { error } = await signInWithGoogle(tokenResponse.access_token);
+      const { error, data } = await signInWithGoogle(tokenResponse.access_token, deviceId);
       if (error) {
         toast({
           title: "Google sign-in failed",
           description: error.message,
           variant: "destructive",
         });
+      } else if (data?.otpRequired) {
+        setOtpUserId(data.userId);
+        setShowOtpInput(true);
+        toast({
+          title: "Verification required",
+          description: "A 6-digit OTP has been sent to your email.",
+        });
       } else {
         toast({
           title: "Welcome!",
           description: "Successfully signed in with Google.",
         });
+
+        if (data?.isAdmin) {
+          navigate("/admin");
+        }
       }
       setIsGoogleLoading(false);
     },
@@ -175,7 +266,7 @@ const Auth = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="bg-transparent backdrop-blur-[2px] rounded-2xl p-8 float-animation"
+            className={`bg-transparent backdrop-blur-[2px] rounded-2xl p-8 ${isLogin ? "" : "float-animation"}`}
           >
 
             {/* Crocus Flower Logo  <div className="mb-8 flex items-center justify-center"> <img src={crocusLogo} alt="Crocus Sativus" className="w-20 h-20 object-contain" /> </div> */}
@@ -217,7 +308,7 @@ const Auth = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  className="w-full bg-transparent border-b border-white pl-8 py-2 auth-input-white placeholder-white/50 focus:outline-none focus:border-white transition-colors"
+                  className="w-full bg-transparent border-b border-white pl-8 py-2 auth-input-white placeholder-white/50 focus:outline-none focus:border-white"
                   placeholder="Enter Email"
                 />
               </div>
@@ -230,8 +321,9 @@ const Auth = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
-                  className="w-full bg-transparent border-b border-white pl-8 pr-10 py-2 auth-input-white placeholder-white/50 focus:outline-none focus:border-white transition-colors"
+                  className="w-full bg-transparent border-b border-white pl-8 pr-10 py-2 auth-input-white placeholder-white/50 focus:outline-none focus:border-white"
                   placeholder="Enter Password"
+                  disabled={showOtpInput}
                 />
                 <button
                   type="button"
@@ -241,6 +333,25 @@ const Auth = () => {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+
+              {showOtpInput && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="relative"
+                >
+                  <KeyRound className="absolute left-0 top-3 w-4 h-4 text-[#C6A85A]" />
+                  <input
+                    type="text"
+                    value={otp}
+                    maxLength={6}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    className="w-full bg-transparent border-b border-[#C6A85A] pl-8 py-2 auth-input-white placeholder-white/50 focus:outline-none focus:border-[#C6A85A] text-[#C6A85A] tracking-[0.5em] font-bold"
+                    placeholder="Enter 6-Digit OTP"
+                    autoFocus
+                  />
+                </motion.div>
+              )}
 
               {isLogin && (
                 <div className="flex justify-end">
@@ -259,7 +370,7 @@ const Auth = () => {
                   disabled={isLoading || authLoading}
                   className="w-full mt-8 py-3 bg-white text-black uppercase tracking-widest"
                 >
-                  {isLoading ? "Processing..." : isLogin ? "Login" : "Register"}
+                  {isLoading ? "Processing..." : showOtpInput ? "Verify OTP" : isLogin ? "Login" : "Register"}
                 </Button>
               </motion.div>
             </form>

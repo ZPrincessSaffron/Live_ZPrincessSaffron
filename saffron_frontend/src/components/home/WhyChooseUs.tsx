@@ -61,12 +61,12 @@ const WhyChooseUs = () => {
           transition={{ duration: 1.1, ease: [0.22,1,0.36,1] }}
           className="text-center max-w-3xl mx-auto mb-20"
         >
-          <span className="font-sans text-sm uppercase tracking-[0.35em] text-gold/70">
+          <span className="font-sans text-xs md:text-sm uppercase tracking-[0.35em] text-gold/70">
             The Z Princess Difference
           </span>
 
-          <h2 className="font-serif text-4xl  tracking-[0.1em] md:text-5xl lg:text-5xl text-royal-purple mt-2 mb-4">
-            Why Choose Our <br/>Saffron
+          <h2 className="font-serif text-2xl  tracking-[0.1em] md:text-5xl lg:text-5xl text-royal-purple mt-2 mb-4">
+            Why Choose Our Saffron
           </h2>
 
           <div className="w-28 h-px bg-gradient-to-r from-transparent via-gold to-transparent mx-auto" />
@@ -77,7 +77,7 @@ const WhyChooseUs = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.9, delay: 0.2 }}
-          className="flex flex-wrap justify-center gap-8 md:gap-14 mb-24"
+          className="grid grid-cols-2 md:flex md:flex-wrap justify-center gap-7 md:gap-14 mb-24"
         >
           {badges.map((badge, index) => (
   <motion.div
@@ -115,10 +115,10 @@ const WhyChooseUs = () => {
     /* pause on hover (luxury detail) */
     whileHover={{ y: 0, rotate: 0 }}
 
-    className="group flex flex-col items-center"
+    className={`group flex flex-col items-center ${index === 2 ? "col-span-2" : ""}`}
   >
     {/* Luxury seal */}
-    <div className="w-24 h-24 rounded-full bg-royal-purple-dark border border-gold/40 flex items-center justify-center shadow-elegant relative overflow-hidden">
+    <div className="w-20 h-20 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full bg-royal-purple-dark border border-gold/40 flex items-center justify-center shadow-elegant relative overflow-hidden">
 
       {/* glow on hover */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-30 bg-gold blur-xl transition-opacity duration-500" />
@@ -156,7 +156,7 @@ const WhyChooseUs = () => {
               <div className="absolute top-0 left-0 h-full w-[2px] bg-gradient-to-b from-gold to-gold/40 scale-y-0 group-hover:scale-y-100 transition-transform duration-500 origin-top" />
 
               {/* Interactive title */}
-              <h3 className="relative inline-block product-title font-medium text-[20px] md:text-[20px]  tracking-[0.12em] text-royal-purple leading-[1.4] mb-4 transition-colors duration-500 group-hover:text-gold">
+              <h3 className="relative inline-block product-title font-[600] text-[18px] md:text-[18px]  tracking-[0.12em] text-royal-purple font-[500] leading-[1.4] mb-4 transition-colors duration-500 group-hover:text-gold">
   {feature.title}
   <span className="absolute left-0 -bottom-1 h-[1px] w-0 bg-gold transition-all duration-500 group-hover:w-full"></span>
 </h3>

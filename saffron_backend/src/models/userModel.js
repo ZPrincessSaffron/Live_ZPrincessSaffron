@@ -44,6 +44,10 @@ const userSchema = new mongoose.Schema(
                 },
             },
         ],
+        orders: {
+            type: Array,
+            default: [],
+        },
         likedProducts: [{ type: Number }],
         resetPasswordToken: String,
         resetPasswordExpires: Date,

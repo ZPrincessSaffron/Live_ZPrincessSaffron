@@ -65,7 +65,7 @@ const About = () => {
       {/* =========================
          ✅ NEW HERO VIDEO SECTION
       ========================= */}
-      <section className="relative min-h-[60vh] md:min-h-[80vh] lg:h-screen w-full overflow-hidden flex items-center justify-center">
+      <section className="relative min-h-[60vh] md:min-h-[80vh] lg:h-[100svh] w-full overflow-hidden flex items-center justify-center">
 
         {/* Background Video */}
         <HeroVideo />
@@ -104,11 +104,10 @@ const About = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.7 }}
-              className="font-cinzel text-3xl md:text-5xl lg:text-6xl text-ivory mb-8 leading-tight font-medium"
+              className="font-cinzel text-[clamp(1.5rem,7vw,4rem)] text-ivory mb-8 leading-[1.2] font-medium"
             >
               Tradition in every
               <br /><span className="text-gold">thread</span>
-
             </motion.h1>
 
             {/* Description */}
@@ -116,7 +115,7 @@ const About = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 1 }}
-              className="font-sans text-white/100 text-sm md:text-xl tracking-widest mb-12"
+              className="font-sans text-white/100 text-[clamp(0.8rem,3vw,1.25rem)] tracking-widest mb-12"
             >
               More than a saffron brand
               <br /> a legacy of passion,
@@ -157,6 +156,8 @@ const About = () => {
           <img
             src={kolam}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="
       w-[520px]
       opacity-10
@@ -174,6 +175,8 @@ const About = () => {
           <img
             src={kolam}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="
       absolute
       bottom-0
@@ -189,6 +192,8 @@ const About = () => {
           <img
             src={kolam}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="
       absolute
       bottom-0
@@ -216,7 +221,7 @@ const About = () => {
             <div className="w-24 h-px bg-gradient-to-r from-transparent via-gold to-transparent mx-auto" />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto px-4 md:px-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto px-4 md:px-0">
             {corporateDetails.map((item) => (
               <div
                 key={item.label}
@@ -241,6 +246,8 @@ const About = () => {
                       <img
                         src={corporateLogo}
                         alt="HeyRam Infrastructure"
+                        loading="lazy"
+                        decoding="async"
                         className="h-5 w-auto object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300"
                       />
                     </div>

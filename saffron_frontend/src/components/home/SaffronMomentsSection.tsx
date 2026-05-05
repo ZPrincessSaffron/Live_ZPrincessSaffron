@@ -167,11 +167,11 @@ const Panel = ({ chapter }: { chapter: (typeof chapters)[0]; index: number }) =>
   ];
 
   return (
-    <div ref={ref} className="relative min-h-screen">
+    <div ref={ref} className="relative min-h-[100svh]">
       <motion.section
         ref={sectionRef}
         style={{ opacity }}
-        className="sticky top-0 h-screen overflow-hidden flex items-center justify-center"
+        className="sticky top-0 h-[100svh] overflow-hidden flex items-center justify-center"
         onMouseMove={handleMouseMove}
         onMouseLeave={() => { mouseX.set(0); mouseY.set(0); }}
       >
@@ -183,6 +183,8 @@ const Panel = ({ chapter }: { chapter: (typeof chapters)[0]; index: number }) =>
           <motion.img
             src={chapter.image}
             alt={chapter.tag}
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover"
             style={{ scale, filter: imgFilter }}
           />
@@ -252,10 +254,10 @@ const Panel = ({ chapter }: { chapter: (typeof chapters)[0]; index: number }) =>
           <motion.h2
             style={{
               y: headingY,
-              fontFamily: "'sans'",
+              fontFamily: "'cinzel', serif",
               fontSize: "clamp(1.6rem,5vw,3.5rem)",
               color: BRAND.cream,
-              fontWeight: 100,
+              fontWeight: 500,
               letterSpacing: "0.06em",
               textShadow: `0 4px 40px ${BRAND.plum}99`,
             }}
@@ -303,14 +305,17 @@ const Panel = ({ chapter }: { chapter: (typeof chapters)[0]; index: number }) =>
 
           {/* Sub text */}
           <motion.p
-            className="moments-description"
+            className="moments-description "
             style={{
               y: subY,
-              fontFamily: "'rr'",
-              fontSize: "clamp(1rem,1.8vw,1.2rem)",
+              fontFamily: "'sans-serif'",
+              fontSize: "clamp(1rem,1.4vw,1.1rem)",
               color: "rgba(250,248,242,0.72)",
-              lineHeight: 1.78,
-              maxWidth: 460
+              lineHeight: 1.6,
+              maxWidth: 600,
+              letterSpacing:"0.05em",
+              textTransform: "lowercase"
+              
               
             }}
             initial={{ opacity: 0, y: 40 }}

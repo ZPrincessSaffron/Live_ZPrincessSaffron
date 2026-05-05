@@ -106,10 +106,10 @@ const ProfileOverview = ({
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-8 bg-white/70 backdrop-blur-md border border-white/30 shadow-xl rounded-2xl"
+      className="p-5 md:p-8 bg-white/70 backdrop-blur-md border border-white/30 shadow-xl rounded-2xl"
     >
       {/* HEADER */}
-      <div className="relative z-10 mb-16 text-center md:text-left lg:text-center w-full">
+      <div className="relative z-10 mb-16 text-center w-full">
         <h2 className="font-serif text-xl sm:text-2xl md:text-3xl tracking-[0.30em] text-royal-purple uppercase">
           Profile Overview
         </h2>
@@ -139,6 +139,8 @@ const ProfileOverview = ({
                 <img
                   src={profile.avatar_url}
                   alt=""
+                  loading="eager"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -217,9 +219,14 @@ const ProfileOverview = ({
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="flex justify-center gap-6 mt-12"
+              className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 mt-12 w-full"
             >
-              <Button variant="royal" onClick={handleSave} disabled={isSaving}>
+              <Button 
+                variant="royal" 
+                onClick={handleSave} 
+                disabled={isSaving}
+                className="w-full sm:w-auto min-w-0 sm:min-w-[210px]"
+              >
                 {isSaving ? (
                   <span className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -230,7 +237,11 @@ const ProfileOverview = ({
                 )}
               </Button>
 
-              <Button variant="royal" onClick={handleCancel}>
+              <Button 
+                variant="royal" 
+                onClick={handleCancel}
+                className="w-full sm:w-auto min-w-0 sm:min-w-[210px]"
+              >
                 Cancel
               </Button>
             </motion.div>

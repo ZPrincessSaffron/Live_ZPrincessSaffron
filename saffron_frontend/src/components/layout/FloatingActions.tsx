@@ -47,7 +47,7 @@ const FloatingActions = () => {
 
       {/* LEFT SIDE – WHATSAPP CALL */}
       <a
-        href="https://wa.me/917200150588"
+        href="https://wa.me/+917538870577"
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-6 left-6 z-50 w-12 h-12 rounded-full bg-gradient-royal text-ivory shadow-gold-glow flex items-center justify-center transition-all duration-300 hover:scale-110"

@@ -15,10 +15,18 @@ import {
 } from "@/components/ui/select";
 
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
+import {
   Plus, Pencil, Trash2, Upload, X, Menu,
   LayoutDashboard, Boxes, Loader2,
   Users, ShoppingBag, IndianRupee, AlertTriangle, ClipboardList,
-   ArrowRight,
+   ArrowRight, Package as PackageIcon, Eye, RefreshCcw
 } from "lucide-react";
 import {
   motion,
@@ -271,7 +279,7 @@ interface Product {
   tag?: string; description: string; stock: number;
   rating?: number; reviews?: number;
 }
-type TabId = "dashboard" | "add" | "update" | "delete" | "stock" | "orders";
+type TabId = "dashboard" | "add" | "update" | "delete" | "stock" | "orders" | "returns";
 interface Stats { totalUsers: number; totalOrders: number; totalRevenue: number; lowStockCount: number; lowStockProducts: any[]; }
 interface SalesData {
   daily: { date: string; revenue: number; orders: number }[];
@@ -317,6 +325,14 @@ const AdminDashboard = () => {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
 
+  const [returnRequests, setReturnRequests] = useState<any[]>([]);
+  const [returnsLoading, setReturnsLoading] = useState(false);
+  const [returnActionLoading, setReturnActionLoading] = useState<string | null>(null);
+  const [selectedReturn, setSelectedReturn] = useState<any>(null);
+  const [isReturnDetailOpen, setIsReturnDetailOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [pendingReturnCount, setPendingReturnCount] = useState<number>(0);
+
   const fetchProducts = useCallback(async () => {
     setListLoading(true);
     try { const res = await fetch(API); const data: Product[] = await res.json(); setProducts(data); const sm: Record<string, number> = {}; data.forEach((p) => { sm[p._id] = p.stock ?? 0; }); setStockMap(sm); }
@@ -345,6 +361,40 @@ const AdminDashboard = () => {
     finally { setOrdersLoading(false); }
   }, [user, toast]);
 
+  const fetchReturns = useCallback(async () => {
+    if (!user?.token) return; setReturnsLoading(true);
+    try {
+      const res = await fetch(`${BASE_URL}/returns/admin/all`, { headers: { Authorization: `Bearer ${user.token}` } });
+      const data = await res.json();
+      if (res.ok) setReturnRequests(data);
+    } catch { toast({ title: "Error", description: "Could not load return requests", variant: "destructive" }); }
+    finally { setReturnsLoading(false); }
+  }, [user, toast]);
+
+  const fetchPendingReturnCount = useCallback(async () => {
+    if (!user?.token) return;
+    try {
+      const res = await fetch(`${BASE_URL}/admin/returns/count`, { headers: { Authorization: `Bearer ${user.token}` } });
+      const data = await res.json();
+      if (res.ok) setPendingReturnCount(data.pendingReturns);
+    } catch (err) { console.error("Could not fetch return count", err); }
+  }, [user, BASE_URL]);
+
+  const handleReturnAction = async (id: string, action: "approve" | "reject" | "refund", note?: string) => {
+    setReturnActionLoading(id);
+    try {
+      const res = await fetch(`${BASE_URL}/returns/admin/${id}/${action}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${user?.token}` },
+        body: JSON.stringify({ adminNote: note })
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: "Success", description: `Return ${action}ed successfully` });
+      fetchReturns();
+    } catch { toast({ title: "Error", description: `Could not ${action} return`, variant: "destructive" }); }
+    finally { setReturnActionLoading(null); }
+  };
+
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     setStatusUpdating(orderId);
     try {
@@ -357,10 +407,11 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    if (tab === "dashboard") { fetchStats(); fetchSales(); }
+    if (tab === "dashboard") { fetchStats(); fetchSales(); fetchPendingReturnCount(); fetchReturns(); }
     if (tab === "delete" || tab === "stock" || tab === "update") fetchProducts();
-    if (tab === "orders") fetchAllOrders();
-  }, [tab, fetchProducts, fetchStats, fetchSales, fetchAllOrders]);
+    if (tab === "orders") { fetchAllOrders(); fetchPendingReturnCount(); }
+    if (tab === "returns") fetchReturns();
+  }, [tab, fetchProducts, fetchStats, fetchSales, fetchAllOrders, fetchReturns, fetchPendingReturnCount]);
 
   if (!user || user.isAdmin !== true) {
     return (
@@ -427,6 +478,7 @@ const AdminDashboard = () => {
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: "dashboard", label: "Overview",      icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: "orders",    label: "Orders",         icon: <ClipboardList   className="w-4 h-4" /> },
+    { id: "returns",   label: "Returns",        icon: <PackageIcon         className="w-4 h-4" /> },
     { id: "add",       label: "Add Product",    icon: <Plus            className="w-4 h-4" /> },
     { id: "update",    label: "Update Product", icon: <Pencil          className="w-4 h-4" /> },
     { id: "delete",    label: "Delete Product", icon: <Trash2          className="w-4 h-4" /> },
@@ -437,7 +489,11 @@ const AdminDashboard = () => {
     <div className="border-2 max-w-xs mx-auto border-dashed border-gold/20 rounded-xl p-8 text-center bg-gold/[0.02]">
       {preview ? (
         <div className="relative inline-block">
-          <img src={preview} className="h-40 w-40 object-cover rounded-lg border border-gold/20 shadow" />
+          <img
+            src={preview}
+            decoding="async"
+            className="h-40 w-40 object-cover rounded-lg border border-gold/20 shadow"
+          />
           <button type="button" onClick={onRemove} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow"><X className="w-3 h-3" /></button>
         </div>
       ) : (
@@ -494,7 +550,27 @@ const AdminDashboard = () => {
   return (
     <Layout>
       <ScrollProgressBar />
-      <div className="min-h-screen bg-ivory overflow-x-hidden">
+      <div className="admin-dashboard-page min-h-screen bg-ivory overflow-x-hidden">
+        <style>{`
+          .admin-dashboard-page .text-royal-purple\\/40,
+          .admin-dashboard-page .md\\:text-royal-purple\\/40 {
+            color: hsl(var(--royal-purple) / 0.5);
+          }
+
+          .admin-dashboard-page .text-royal-purple\\/50,
+          .admin-dashboard-page .md\\:text-royal-purple\\/50 {
+            color: hsl(var(--royal-purple) / 0.6);
+          }
+
+          .admin-dashboard-page .text-royal-purple\\/60,
+          .admin-dashboard-page .md\\:text-royal-purple\\/60 {
+            color: hsl(var(--royal-purple) / 0.7);
+          }
+
+          .admin-dashboard-page .text-muted-foreground {
+            color: hsl(var(--royal-purple) / 0.68);
+          }
+        `}</style>
 
         <DashboardHero />
 
@@ -555,7 +631,7 @@ const AdminDashboard = () => {
                           { label: "Total Users",    value: stats?.totalUsers ?? 0,                            icon: <Users className="w-5 h-5" />,        color: "bg-blue-50 text-blue-600",   border: "border-blue-100/80" },
                           { label: "Total Orders",   value: stats?.totalOrders ?? 0,                           icon: <ShoppingBag className="w-5 h-5" />,   color: "bg-green-50 text-green-600", border: "border-green-100/80" },
                           { label: "Total Revenue",  value: `₹${(stats?.totalRevenue ?? 0).toLocaleString()}`, icon: <IndianRupee className="w-5 h-5" />,   color: "bg-amber-50 text-amber-600", border: "border-amber-100/80" },
-                          { label: "Low Stock Items",value: stats?.lowStockCount ?? 0,                         icon: <AlertTriangle className="w-5 h-5" />, color: "bg-red-50 text-red-500",     border: "border-red-100/80", alert: (stats?.lowStockCount ?? 0) > 0 },
+                          { label: "Pending Returns",value: pendingReturnCount,                                icon: <RefreshCcw className="w-5 h-5" />,    color: "bg-orange-50 text-orange-600", border: "border-orange-100/80", alert: pendingReturnCount > 0 },
                         ].map((stat, i) => (
                           <motion.div key={i}
                             variants={{ hidden: { opacity: 0, y: 32 }, show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } } }}
@@ -787,21 +863,51 @@ const AdminDashboard = () => {
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-charcoal/10 bg-white shadow-sm overflow-hidden">
-                          <div className="flex items-center gap-3 px-6 py-3 bg-royal-purple">
-                            <AlertTriangle className="w-4 h-4 text-red-400" />
-                            <h2 className="product-title text-[13px] font-[400] tracking-[0.09em] text-ivory uppercase leading-none">Low Stock</h2>
+                        <div className="space-y-6">
+                          {/* LOW STOCK */}
+                          <div className="rounded-2xl border border-charcoal/10 bg-white shadow-sm overflow-hidden">
+                            <div className="flex items-center gap-3 px-6 py-3 bg-royal-purple">
+                              <AlertTriangle className="w-4 h-4 text-red-400" />
+                              <h2 className="product-title text-[13px] font-[400] tracking-[0.09em] text-ivory uppercase leading-none">Low Stock</h2>
+                            </div>
+                            <div className="p-6 space-y-3 max-h-[300px] overflow-y-auto">
+                              {stats?.lowStockProducts?.length === 0 && <p className="product-desc text-[12px] text-royal-purple/40 text-center py-8">All products well stocked.</p>}
+                              {stats?.lowStockProducts?.map((p: any) => (
+                                <motion.div key={p.id} whileHover={{ y: -2, boxShadow: "0 8px 24px rgba(0,0,0,0.06)" }} className="flex items-center gap-3 p-4 rounded-xl border border-red-100/60 bg-red-50/30">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="product-desc text-[12px] font-[400] text-royal-purple truncate">{p.name}</p>
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-100 text-red-600 uppercase tracking-wider mt-1">Stock: {p.stock}</span>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
                           </div>
-                          <div className="p-6 space-y-3 max-h-[500px] overflow-y-auto">
-                            {stats?.lowStockProducts?.length === 0 && <p className="product-desc text-[12px] text-royal-purple/40 text-center py-8">All products well stocked.</p>}
-                            {stats?.lowStockProducts?.map((p: any) => (
-                              <motion.div key={p.id} whileHover={{ y: -2, boxShadow: "0 8px 24px rgba(0,0,0,0.06)" }} className="flex items-center gap-3 p-4 rounded-xl border border-red-100/60 bg-red-50/30">
-                                <div className="flex-1 min-w-0">
-                                  <p className="product-desc text-[12px] font-[400] text-royal-purple truncate">{p.name}</p>
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-100 text-red-600 uppercase tracking-wider mt-1">Stock: {p.stock}</span>
-                                </div>
-                              </motion.div>
-                            ))}
+
+                          {/* PENDING RETURNS */}
+                          <div className="rounded-2xl border border-charcoal/10 bg-white shadow-sm overflow-hidden">
+                            <div className="flex items-center gap-3 px-6 py-3 bg-royal-purple">
+                              <RefreshCcw className="w-4 h-4 text-orange-400" />
+                              <h2 className="product-title text-[13px] font-[400] tracking-[0.09em] text-ivory uppercase leading-none">Pending Returns</h2>
+                            </div>
+                            <div className="p-6 space-y-3 max-h-[400px] overflow-y-auto">
+                              {returnRequests.filter(r => r.status === "requested").length === 0 && (
+                                <p className="product-desc text-[12px] text-royal-purple/40 text-center py-8">No pending returns.</p>
+                              )}
+                              {returnRequests.filter(r => r.status === "requested").map((r: any) => (
+                                <motion.div 
+                                  key={r._id} 
+                                  whileHover={{ y: -2, boxShadow: "0 8px 24px rgba(0,0,0,0.06)" }} 
+                                  onClick={() => setTab("returns")}
+                                  className="flex flex-col gap-1 p-4 rounded-xl border border-orange-100/60 bg-orange-50/30 cursor-pointer group"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <p className="product-desc text-[12px] font-bold text-royal-purple">#{r.orderId}</p>
+                                    <ArrowRight className="w-3 h-3 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  </div>
+                                  <p className="product-desc text-[11px] text-royal-purple/70 truncate">{r.reason}</p>
+                                </motion.div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -861,7 +967,13 @@ const AdminDashboard = () => {
                                       <p className="product-desc text-[13px] font-[400] text-royal-purple whitespace-normal sm:truncate leading-snug">{p.name}</p>
                                       <p className="product-desc text-[11px] font-[400] text-royal-purple/40 mt-0.5 tracking-wide truncate">₹{p.price.toLocaleString()} · {p.category} · Stock: {p.stock ?? 0}</p>
                                     </div>
-                                    <Button variant="section" onClick={() => { setEditProduct(p); setEditImagePreview(p.image?.startsWith("data:") ? p.image : null); }} className="w-auto min-w-[70px] md:w-20 h-8 px-3 text-[10px] md:text-[11px] uppercase shrink-0">Edit</Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      onClick={() => { setEditProduct(p); setEditImagePreview(p.image?.startsWith("data:") ? p.image : null); }} 
+                                      className="w-auto min-w-[70px] md:w-20 h-8 px-3 text-[10px] md:text-[11px] uppercase shrink-0 bg-[#2E0F3A] text-ivory rounded-full hover:bg-[#2E0F3A]/90 transition-all"
+                                    >
+                                      Edit
+                                    </Button>
                                   </motion.div>
                                 </GlowCard>
                               ))}
@@ -895,14 +1007,18 @@ const AdminDashboard = () => {
                               <ImageUploader preview={editImagePreview} onFile={(e) => handleImageChange(e, (v) => setEditProduct((p) => p && { ...p, image: v }), setEditImagePreview)} onRemove={() => { setEditProduct((p) => p && { ...p, image: "" }); setEditImagePreview(null); }} />
                               {editProduct.image && !editImagePreview && (
                                 <div className="mt-3 flex items-center gap-3">
-                                  <img src={editProduct.image} className="w-16 h-16 object-cover rounded-lg border border-gold/20" />
+                                  <img
+                                    src={editProduct.image}
+                                    decoding="async"
+                                    className="w-16 h-16 object-cover rounded-lg border border-gold/20"
+                                  />
                                   <p className="product-desc text-[11px] text-royal-purple/50">Current image (upload above to replace)</p>
                                 </div>
                               )}
                             </FormField>
                             <FormField label="Description"><Textarea value={editProduct.description} onChange={(e) => setEditProduct((p) => p && { ...p, description: e.target.value })} required className={`min-h-[120px] ${inputCls}`} /></FormField>
                             <div className="flex justify-end">
-                              <Button variant="royal" type="submit" disabled={updateLoading} className="w-[10px] uppercase text-xs">{updateLoading ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Saving…</> : "Save Changes"}</Button>
+                              <Button variant="royal" type="submit" disabled={updateLoading} className="px-10 uppercase text-xs">{updateLoading ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Saving…</> : "Save Changes"}</Button>
                             </div>
                           </form>
                         )}
@@ -949,33 +1065,40 @@ const AdminDashboard = () => {
                       <Panel icon={<ClipboardList className="w-4 h-4 text-gold" />} title="Order Management"
                         action={<button onClick={fetchAllOrders} disabled={ordersLoading} className="product-desc text-[10px] tracking-widest uppercase text-ivory/70 hover:text-gold transition-colors">{ordersLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : "Refresh"}</button>}>
                         <div className="flex flex-wrap gap-2 mb-6">
-                          {["all", ...allStatuses].map((s) => (
+                          {["all", "returns", ...allStatuses].map((s) => (
                             <motion.button key={s} whileHover={{ y: -1 }} onClick={() => setOrderFilter(s)}
                               className={`px-3 py-1 rounded-full product-desc font-medium text-[10px] uppercase tracking-widest border transition-all ${orderFilter === s ? "bg-royal-purple text-ivory border-royal-purple shadow-sm" : "border-gold/20 text-royal-purple/60 hover:border-gold/40 hover:text-royal-purple"}`}>
-                              {s === "all" ? `All (${allOrders.length})` : s.replace("_", " ")}
+                              {s === "all" ? `All (${allOrders.length})` : 
+                               s === "returns" ? `Returns (${allOrders.filter(o => o.returnRequest?.status === "requested").length})` : 
+                               s.replace("_", " ")}
                             </motion.button>
                           ))}
                         </div>
                         {ordersLoading ? <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-gold" /></div> :
-                         (allOrders.filter((o) => orderFilter === "all" || o.status === orderFilter)).length === 0 ? <p className="product-desc text-center text-[13px] text-royal-purple/40 py-16">No orders found.</p> : (
+                         (allOrders.filter((o) => orderFilter === "all" ? true : orderFilter === "returns" ? o.returnRequest?.status === "requested" : o.status === orderFilter)).length === 0 ? <p className="product-desc text-center text-[13px] text-royal-purple/40 py-16">No orders found.</p> : (
                           <div className="space-y-3">
-                            {(allOrders.filter((o) => orderFilter === "all" || o.status === orderFilter)).map((order) => (
+                            {(allOrders.filter((o) => orderFilter === "all" ? true : orderFilter === "returns" ? o.returnRequest?.status === "requested" : o.status === orderFilter)).map((order) => (
                               <div key={order.orderId} className="border border-gold/10 rounded-xl overflow-hidden hover:border-gold/25 transition-colors">
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 cursor-pointer" onClick={() => setExpandedOrder(expandedOrder === order.orderId ? null : order.orderId)}>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-3 flex-wrap">
                                       <p className="product-desc text-[13px] font-[400] text-royal-purple">#{order.orderId}</p>
                                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full product-desc text-[9px] font-bold border uppercase tracking-widest ${statusColors[order.status] || "bg-gray-50 text-gray-500 border-gray-200"}`}>{order.status?.replace("_", " ")}</span>
+                                      {order.returnRequest?.status === "requested" && (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full product-desc text-[9px] font-bold bg-red-100 text-red-600 border border-red-200 uppercase tracking-widest animate-pulse">
+                                          Return Requested
+                                        </span>
+                                      )}
                                     </div>
                                     <p className="product-desc text-[11px]  font-[400] text-royal-purple/40 mt-1 break-words tracking-wide">{order.user?.fullName || "—"} · {order.user?.email || "—"} · ₹{order.total?.toLocaleString()} · {new Date(order.createdAt).toLocaleDateString("en-IN")}</p>
                                   </div>
-                                  <div className="shrink-0 w-full sm:w-auto" onClick={(e) => e.stopPropagation()}>
+                                  <div className="shrink-0 w-full sm:w-auto sm:min-w-[150px]" onClick={(e) => e.stopPropagation()}>
                                     <Select 
                                       value={order.status} 
                                       onValueChange={(v) => handleStatusUpdate(order.orderId, v)}
                                       disabled={statusUpdating === order.orderId}
                                     >
-                                      <SelectTrigger className="h-9 w-20 sm:w-[140px] border-gold/20 bg-white text-royal-purple text-[12px]">
+                                      <SelectTrigger className="h-9 w-full min-w-0 sm:w-[150px] border-gold/20 bg-white text-royal-purple text-[11px] sm:text-[12px]">
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -1013,6 +1136,89 @@ const AdminDashboard = () => {
                                           <p className="product-desc text-[11px] font-[400]  text-royal-purple/40 mt-1">Payment: {order.paymentMethod} {order.razorpayOrderId ? `· Razorpay: ${order.razorpayOrderId}` : ""}</p>
                                         </div>
                                       </div>
+
+                                      {order.returnRequest && (
+                                        <div className="md:col-span-2 mt-4 pt-4 border-t border-gold/10">
+                                          <div className="flex items-center justify-between mb-3">
+                                            <p className="product-desc text-[10px] font-[400] tracking-[0.2em] uppercase text-royal-purple/40">Return Request</p>
+                                            <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest ${
+                                              order.returnRequest.status === "requested" ? "bg-orange-50 text-orange-600 border border-orange-100" :
+                                              order.returnRequest.status === "approved" ? "bg-green-50 text-green-600 border border-green-100" :
+                                              order.returnRequest.status === "rejected" ? "bg-red-50 text-red-600 border border-red-100" : "bg-gray-50 text-gray-400"
+                                            }`}>
+                                              {order.returnRequest.status}
+                                            </span>
+                                          </div>
+                                          
+                                          <div className="grid md:grid-cols-2 gap-6 bg-white/20 rounded-xl p-4 border border-gold/5">
+                                            <div className="space-y-3">
+                                              <div>
+                                                <p className="product-desc text-[11px] text-royal-purple font-medium">{order.returnRequest.reason}</p>
+                                                {order.returnRequest.description && (
+                                                  <p className="product-desc text-[11px] text-royal-purple/70 italic mt-1 leading-relaxed">"{order.returnRequest.description}"</p>
+                                                )}
+                                              </div>
+                                              <div className="grid md:grid-cols-2 gap-4">
+                                                <div className="space-y-1">
+                                                  <p className="text-[10px] uppercase tracking-widest text-royal-purple/50">Pickup Address</p>
+                                                  <p className="text-[11px] text-royal-purple/80 leading-relaxed font-sans">{order.returnRequest.pickupAddress || order.shippingDetails?.address || "N/A"}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                  <p className="text-[10px] uppercase tracking-widest text-royal-purple/50">Contact Number</p>
+                                                  <p className="text-[11px] text-royal-purple/80 font-sans">{order.returnRequest.contactNumber || order.shippingDetails?.phone || "N/A"}</p>
+                                                </div>
+                                              </div>
+                                              
+                                              <div>
+                                                <p className="text-[10px] uppercase tracking-widest text-royal-purple/50 mb-2">Photo Evidence</p>
+                                                <div className="flex gap-2">
+                                                  {order.returnRequest.images?.map((img: string, i: number) => (
+                                                    <motion.div 
+                                                      key={i} 
+                                                      whileHover={{ scale: 1.05 }}
+                                                      className="w-12 h-12 rounded-lg border border-gold/10 overflow-hidden cursor-zoom-in"
+                                                      onClick={() => setPreviewImage(img)}
+                                                    >
+                                                      <img src={img} className="w-full h-full object-cover" alt="Return Evidence" />
+                                                    </motion.div>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            </div>
+
+                                            <div className="flex flex-col justify-center items-end gap-3">
+                                              {order.returnRequest.status === "requested" && (
+                                                <div className="flex gap-2 w-full sm:w-auto">
+                                                  <Button 
+                                                    size="sm" 
+                                                    variant="outline" 
+                                                    className="flex-1 sm:flex-none h-8 px-4 text-[10px] border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all font-bold uppercase tracking-wider" 
+                                                    onClick={() => handleReturnAction(order.returnRequest._id, "approve")} 
+                                                    disabled={returnActionLoading === order.returnRequest._id}
+                                                  >
+                                                    Approve
+                                                  </Button>
+                                                  <Button 
+                                                    size="sm" 
+                                                    variant="destructive" 
+                                                    className="flex-1 sm:flex-none h-8 px-4 text-[10px] font-bold uppercase tracking-wider" 
+                                                    onClick={() => handleReturnAction(order.returnRequest._id, "reject")} 
+                                                    disabled={returnActionLoading === order.returnRequest._id}
+                                                  >
+                                                    Reject
+                                                  </Button>
+                                                </div>
+                                              )}
+                                              {order.returnRequest.status === "approved" && (
+                                                <p className="text-[10px] text-green-600 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                  Approved · Ready for processing
+                                                </p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
                                     </motion.div>
                                   )}
                                 </AnimatePresence>
@@ -1046,7 +1252,7 @@ const AdminDashboard = () => {
                                   </div>
                                   <div className="flex items-center gap-3 shrink-0">
                                     <label className="product-desc text-[10px] font-[400] uppercase tracking-widest text-royal-purple/50">Stock</label>
-                                    <Input type="number" min={0} value={(stockMap[p._id] ?? p.stock) === 0 ? "" : (stockMap[p._id] ?? p.stock)} onChange={(e) => setStockMap((m) => ({ ...m, [p._id]: e.target.value === "" ? 0 : Number(e.target.value) }))} className={`w-10 text-center ${inputCls}`} />
+                                    <Input type="number" min={0} value={(stockMap[p._id] ?? p.stock) === 0 ? "" : (stockMap[p._id] ?? p.stock)} onChange={(e) => setStockMap((m) => ({ ...m, [p._id]: e.target.value === "" ? 0 : Number(e.target.value) }))} className={`w-16 sm:w-20 px-2 text-center ${inputCls}`} />
                                   </div>
                                 </motion.div>
                               ))}
@@ -1060,12 +1266,230 @@ const AdminDashboard = () => {
                     </motion.div>
                   )}
 
+                  {/* ═══ RETURNS ═══ */}
+                  {tab === "returns" && (
+                    <Panel icon={<PackageIcon className="w-4 h-4 text-gold" />} title="Return Requests">
+                      <div className="space-y-4">
+                        {returnsLoading ? (
+                          <div className="py-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-gold" /></div>
+                        ) : returnRequests.length === 0 ? (
+                          <div className="py-12 text-center text-muted-foreground">No return requests found.</div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full min-w-[640px] text-[11px] sm:text-sm text-left">
+                              <thead className="text-[9px] sm:text-[10px] uppercase tracking-widest text-royal-purple/50 border-b border-gold/10">
+                                <tr>
+                                  <th className="px-2 py-3 sm:px-4">Order ID</th>
+                                  <th className="px-2 py-3 sm:px-4">User</th>
+                                  <th className="px-2 py-3 sm:px-4">Reason</th>
+                                  <th className="px-2 py-3 sm:px-4">Proof</th>
+                                  <th className="px-2 py-3 sm:px-4">Status</th>
+                                  <th className="px-2 py-3 sm:px-4">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gold/5">
+                                {returnRequests.map((r) => (
+                                  <tr key={r._id} className="hover:bg-gold/[0.02] transition-colors group">
+                                    <td 
+                                      className="px-2 py-3 sm:px-4 sm:py-4 font-medium text-royal-purple cursor-pointer hover:text-gold transition-colors relative"
+                                      onClick={() => {
+                                        setTab("orders");
+                                        setOrderFilter("all");
+                                        setExpandedOrder(r.orderId);
+                                        // Optional: scroll to top or order section
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                      }}
+                                    >
+                                      #{r.orderId}
+                                      <div className="absolute left-0 bottom-3 w-0 h-0.5 bg-gold group-hover:w-full transition-all duration-300 opacity-0 group-hover:opacity-100" />
+                                    </td>
+                                    <td className="px-2 py-3 sm:px-4 sm:py-4">
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{r.userId?.fullName}</span>
+                                        <span className="text-[10px] text-muted-foreground">{r.userId?.email}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-2 py-3 sm:px-4 sm:py-4">
+                                      <div className="flex flex-col">
+                                        <span>{r.reason}</span>
+                                        {r.description && <span className="text-[10px] text-muted-foreground line-clamp-1">{r.description}</span>}
+                                      </div>
+                                    </td>
+                                    <td className="px-2 py-3 sm:px-4 sm:py-4">
+                                      <div className="flex gap-2">
+                                        {r.images?.map((img: string, i: number) => (
+                                          <div 
+                                            key={i} 
+                                            className="w-8 h-8 sm:w-10 sm:h-10 rounded border border-gold/20 overflow-hidden cursor-zoom-in hover:scale-110 transition-transform"
+                                            onClick={() => setPreviewImage(img)}
+                                          >
+                                            <img src={img} className="w-full h-full object-cover" alt="Proof" />
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </td>
+                                    <td className="px-2 py-3 sm:px-4 sm:py-4">
+                                      <span className={`px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider ${
+                                        r.status === "requested" ? "bg-blue-50 text-blue-600" :
+                                        r.status === "approved" ? "bg-green-50 text-green-600" :
+                                        r.status === "rejected" ? "bg-red-50 text-red-600" :
+                                        r.status === "refunded" ? "bg-gold/10 text-gold" : "bg-gray-50"
+                                      }`}>
+                                        {r.status}
+                                      </span>
+                                    </td>
+                                    <td className="px-2 py-3 sm:px-4 sm:py-4">
+                                      <div className="flex gap-2 items-center">
+                                        <Button 
+                                          size="sm" 
+                                          variant="ghost" 
+                                          className="h-6 w-6 sm:h-7 sm:w-7 p-0 text-royal-purple/40 hover:text-royal-purple hover:bg-royal-purple/5"
+                                          onClick={() => {
+                                            setSelectedReturn(r);
+                                            setIsReturnDetailOpen(true);
+                                          }}
+                                        >
+                                          <Eye className="w-4 h-4" />
+                                        </Button>
+                                        <div className="flex gap-2">
+                                        {r.status === "requested" && (
+                                          <>
+                                            <Button size="sm" variant="outline" className="h-6 sm:h-7 px-2 sm:px-3 text-[9px] sm:text-[10px] border-green-600 text-green-600 hover:bg-green-600 hover:text-white" onClick={() => handleReturnAction(r._id, "approve")} disabled={returnActionLoading === r._id}>Approve</Button>
+                                            <Button size="sm" variant="destructive" className="h-6 sm:h-7 px-2 sm:px-3 text-[9px] sm:text-[10px]" onClick={() => handleReturnAction(r._id, "reject")} disabled={returnActionLoading === r._id}>Reject</Button>
+                                          </>
+                                        )}
+                                        {r.status === "approved" && (
+                                          <Button size="sm" variant="outline" className="h-6 sm:h-7 px-2 sm:px-3 text-[9px] sm:text-[10px] border-gold text-gold hover:bg-gold hover:text-royal-purple font-bold" onClick={() => handleReturnAction(r._id, "refund")} disabled={returnActionLoading === r._id}>Process Refund</Button>
+                                        )}
+                                        {r.status === "refunded" && (
+                                          <span className="text-[10px] text-green-600 font-bold uppercase">Refunded</span>
+                                        )}
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </Panel>
+                  )}
                 </AnimatePresence>
               </main>
             </div>
           </div>
         </section>
 
+        {/* Return Detail Modal */}
+        <Dialog open={isReturnDetailOpen} onOpenChange={setIsReturnDetailOpen}>
+          <DialogContent className="sm:max-w-[500px] border-gold/20 bg-ivory/95 backdrop-blur-xl">
+            <DialogHeader>
+              <DialogTitle className="font-cinzel text-royal-purple tracking-widest text-lg">Return Request Details</DialogTitle>
+            </DialogHeader>
+            {selectedReturn && (
+              <div className="space-y-6 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-widest text-royal-purple/50">Order ID</p>
+                    <p className="font-rr text-sm font-medium">#{selectedReturn.orderId}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-widest text-royal-purple/50">Status</p>
+                    <p className="font-rr text-sm font-bold uppercase text-gold">{selectedReturn.status}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-[10px] uppercase tracking-widest text-royal-purple/50">Items to Return</p>
+                  <div className="space-y-2 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
+                    {selectedReturn.items?.map((item: any, i: number) => (
+                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-white/50 border border-gold/10">
+                        {item.productImage && (
+                          <img src={item.productImage} className="w-10 h-10 rounded object-cover border border-gold/10" alt={item.productName} />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-xs truncate">{item.productName}</p>
+                          <p className="text-[10px] text-muted-foreground">Qty: {item.quantity}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gold/10">
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-widest text-royal-purple/50">Pickup Address</p>
+                    <p className="text-xs text-royal-purple/80 leading-relaxed">{selectedReturn.pickupAddress || "N/A"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-widest text-royal-purple/50">Contact Number</p>
+                    <p className="text-xs text-royal-purple/80">{selectedReturn.contactNumber || "N/A"}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-1 pt-4 border-t border-gold/10">
+                  <p className="text-[10px] uppercase tracking-widest text-royal-purple/50">Reason & Description</p>
+                  <p className="text-xs font-medium text-royal-purple">{selectedReturn.reason}</p>
+                  {selectedReturn.description && (
+                    <p className="text-xs text-royal-purple/70 bg-white/30 p-2 rounded italic mt-1">"{selectedReturn.description}"</p>
+                  )}
+                </div>
+
+                <div className="space-y-2 pt-4 border-t border-gold/10">
+                  <p className="text-[10px] uppercase tracking-widest text-royal-purple/50">Photo Evidence</p>
+                  <div className="flex gap-3">
+                    {selectedReturn.images?.map((img: string, i: number) => (
+                      <div 
+                        key={i} 
+                        className="flex-1 aspect-video rounded-lg overflow-hidden border border-gold/20 cursor-zoom-in hover:border-gold/40 transition-colors"
+                        onClick={() => setPreviewImage(img)}
+                      >
+                        <img src={img} className="w-full h-full object-cover" alt="Proof" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter className="flex-row items-center justify-end gap-2 sm:justify-between">
+              <Button variant="outline" className="flex-1 min-w-0 border-gold/20 px-3 text-[10px] text-royal-purple/60 sm:flex-none sm:text-sm" onClick={() => setIsReturnDetailOpen(false)}>Close</Button>
+              {selectedReturn?.status === "requested" && (
+                <>
+                  <Button variant="outline" className="flex-1 min-w-0 border-green-600 px-3 text-[10px] text-green-600 hover:bg-green-600 hover:text-white sm:flex-none sm:text-sm" onClick={() => { handleReturnAction(selectedReturn._id, "approve"); setIsReturnDetailOpen(false); }}>Approve</Button>
+                  <Button variant="destructive" className="flex-1 min-w-0 px-3 text-[10px] sm:flex-none sm:text-sm" onClick={() => { handleReturnAction(selectedReturn._id, "reject"); setIsReturnDetailOpen(false); }}>Reject</Button>
+                </>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Image Preview Modal */}
+        <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
+          <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 border-none bg-transparent shadow-none flex items-center justify-center">
+            {previewImage && (
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="relative w-full h-full flex items-center justify-center"
+              >
+                <img 
+                  src={previewImage} 
+                  className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl border-4 border-white/10" 
+                  alt="Enlarged Proof" 
+                />
+                <Button 
+                  variant="ghost" 
+                  className="absolute -top-12 right-0 text-white hover:bg-white/10"
+                  onClick={() => setPreviewImage(null)}
+                >
+                  <X className="w-6 h-6" /> Close Preview
+                </Button>
+              </motion.div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

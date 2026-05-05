@@ -294,13 +294,14 @@ const ShippingRates = () => {
         </h2>
       </div>
 
-      <GlowCard className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-500">
+      <div className="flex justify-center">
+        <GlowCard className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-500 max-w-3xl w-full">
         <table className="w-full text-sm">
           {/* thead: font-cinzel uppercase tracking — mirrors Privacy card headers */}
           <thead className="bg-royal-purple text-ivory">
             <tr>
-              {["Order Value", "Standard", "Express"].map((h, i) => (
-                <th key={i} className="text-left py-4 px-6">
+              {["Order Value", "Standard"].map((h, i) => (
+                <th key={i} className="text-center py-4 px-6">
                   <span className="product-title text-[12px] tracking-[0.12em] uppercase text-ivory">
                     {h}
                   </span>
@@ -311,9 +312,8 @@ const ShippingRates = () => {
 
           <tbody>
             {[
-              { order: "Below ₹499",  std: "₹79",  exp: "₹149", free: false },
-              { order: "₹499 – ₹999", std: "₹49",  exp: "₹99",  free: false },
-              { order: "Above ₹999",  std: "FREE", exp: "₹49",  free: true  },
+              { order: "Above ₹2999",  std: "FREE for All other places"},
+              { order: "Above ₹999",  std: "FREE for all over South India"},
             ].map((row, i) => (
               <motion.tr
                 key={i}
@@ -326,7 +326,7 @@ const ShippingRates = () => {
                 }}
                 transition={{ duration: 0.2 }}
               >
-                <td className="py-4 px-6 relative">
+                <td className="py-4 px-6 relative text-center">
                   {/* left gold accent bar on row hover */}
                   <motion.div
                     animate={{ scaleY: hoveredRow === i ? 1 : 0 }}
@@ -342,22 +342,13 @@ const ShippingRates = () => {
                     {row.order}
                   </motion.span>
                 </td>
-                <td className="py-4 px-6">
+                <td className="py-4 px-6 text-center">
                   <motion.span
                     animate={{ x: hoveredRow === i ? 4 : 0 }}
                     transition={{ duration: 0.2 }}
-                    className={`product-desc tracking-[0.09em] text-[12px] font-[400] ${row.free ? "text-green-600" : "text-royal-purple/70"}`}
+                    className={`product-desc tracking-[0.09em] text-[12px] font-[400] ${row.std.includes("FREE") ? "text-green-600" : "text-royal-purple/70"}`}
                   >
                     {row.std}
-                  </motion.span>
-                </td>
-                <td className="py-4 px-6">
-                  <motion.span
-                    animate={{ x: hoveredRow === i ? 4 : 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="product-desc tracking=[0.09em] text-[12px] font-[400] text-royal-purple/60"
-                  >
-                    {row.exp}
                   </motion.span>
                 </td>
               </motion.tr>
@@ -365,6 +356,7 @@ const ShippingRates = () => {
           </tbody>
         </table>
       </GlowCard>
+      </div>
     </motion.div>
   );
 };
@@ -383,15 +375,6 @@ const DeliveryTimeline = () => {
         "Metro Cities: 3–5 business days",
         "Tier 2 Cities: 5–7 business days",
         "Other Areas: 7–10 business days",
-      ],
-    },
-    {
-      title: "Express Delivery",
-      icon: <Clock className="w-4 h-4" />,
-      points: [
-        "Metro Cities: 1–2 business days",
-        "Tier 2 Cities: 2–3 business days",
-        "Other Areas: 3–5 business days",
       ],
     },
   ];
@@ -415,8 +398,9 @@ const DeliveryTimeline = () => {
         </h2>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8">
-        {cards.map((card, index) => (
+      <div className="flex justify-center">
+        <div className="max-w-2xl w-full">
+          {cards.map((card, index) => (
           <motion.div
             key={index}
             /* alternating slide-in — exactly as Privacy's PolicySection */
@@ -429,7 +413,7 @@ const DeliveryTimeline = () => {
           >
             <GlowCard>
               {/* card header — mirrors Privacy's PolicySection purple header exactly */}
-              <div className="flex items-center gap-3 px-6 py-3 bg-royal-purple">
+              <div className="flex items-center gap-3 px-6 py-3 bg-royal-purple justify-center">
                 <motion.div
                   whileHover={{ rotate: 15, scale: 1.1 }}
                   transition={{ type: "spring", stiffness: 400 }}
@@ -449,7 +433,7 @@ const DeliveryTimeline = () => {
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true }}
-                className="px-6 py-4 space-y-2.5"
+                className="px-6 py-6 space-y-4"
               >
                 {card.points.map((point, i) => {
                   const key = `${index}-${i}`;
@@ -463,7 +447,7 @@ const DeliveryTimeline = () => {
                       onHoverEnd={() =>
                         setHoveredItems((p) => ({ ...p, [key]: false }))
                       }
-                      className="flex items-start gap-3 cursor-default"
+                      className="flex items-center justify-center gap-3 cursor-default"
                     >
                       {/* animated dot — same as Privacy list dots */}
                       <motion.span
@@ -474,7 +458,7 @@ const DeliveryTimeline = () => {
                             : "none",
                         }}
                         transition={{ duration: 0.2 }}
-                        className="mt-2 w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0"
+                        className="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0"
                       />
                       {/* font-rr text-[14.5px] — exact Privacy list item style */}
                       <motion.span
@@ -486,7 +470,7 @@ const DeliveryTimeline = () => {
                             : "rgba(40,40,40,0.65)",
                         }}
                         transition={{ duration: 0.2 }}
-                        className="product-desc text-royal-purple font-[400] tracking-[0.09] leading-relaxed text-[12px]"
+                        className="product-desc text-royal-purple font-[400] tracking-[0.09] leading-relaxed text-[12px] text-center"
                       >
                         {point}
                       </motion.span>
@@ -497,6 +481,7 @@ const DeliveryTimeline = () => {
             </GlowCard>
           </motion.div>
         ))}
+        </div>
       </div>
     </motion.div>
   );
@@ -545,11 +530,11 @@ const ContactSection = () => (
           transition={{ delay: 0.35, duration: 0.6 }}
           className="flex flex-col sm:flex-row justify-center gap-6"
         >
-          <MagneticLink href="mailto:zprincessaffron07@gmail.com">
-            zprincessaffron07@gmail.com
+          <MagneticLink href="mailto:Crocus@zprincesssaffron.com">
+            Crocus@zprincesssaffron.com
           </MagneticLink>
-          <MagneticLink href="tel:+917200150588">
-            +91 72001 50588
+          <MagneticLink href="tel:+917538870577">
+            +91 75388 70577
           </MagneticLink>
         </motion.div>
       </motion.div>

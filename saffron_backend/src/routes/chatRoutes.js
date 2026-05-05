@@ -55,7 +55,7 @@ Other areas: 7–10 days
 Express delivery also available.
 
 For help contact:
-📧 zprincessaffron07@gmail.com
+📧 Crocus@zprincesssaffron.com
 📞 +91 72001 50588`
     });
   }

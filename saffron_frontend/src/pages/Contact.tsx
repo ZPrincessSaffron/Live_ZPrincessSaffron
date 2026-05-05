@@ -7,8 +7,8 @@ import { motion } from "framer-motion";
 /* ---------- CONTACT INFO ---------- */
 const contactInfo = [
   { icon: MapPin, label: "Our Office", value: "Chennai, India" },
-  { icon: Phone, label: "Phone", value: "+91 72001 50588", link: "tel:+917200150588" },
-  { icon: Mail, label: "Email", value: "zprincessaffron07@gmail.com", link: "mailto:zprincessaffron07@gmail.com" },
+  { icon: Phone, label: "Phone", value: "+91 75388 70577", link: "tel:+91 75388 70577" },
+  { icon: Mail, label: "Email", value: "Crocus@zprincesssaffron.com", link: "mailto:Crocus@zprincesssaffron.com" },
   { icon: Clock, label: "Our Service", value: "24/7",}
 ];
 
@@ -123,7 +123,7 @@ const Contact = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
-            className="text-ivory/80 max-w-2xl mx-auto text-lg leading-relaxed"
+            className="text-ivory/80 max-w-2xl mx-auto text-md md:text-lg leading-relaxed"
           >
             Whether you're interested in bulk orders, becoming a retailer, or simply have questions about our saffron, we're here to help.
           </motion.p>
@@ -209,7 +209,7 @@ const Contact = () => {
               <p className="text-muted-foreground mb-4">
                 Prefer instant messaging?
               </p>
-              <a href="https://wa.me/917200150588" target="_blank" rel="noopener noreferrer">
+              <a href="https://wa.me/+917538870577" target="_blank" rel="noopener noreferrer">
                 <Button
   variant="royal"
   className="!min-w-0 !px-4 !py-2 !h-auto w-auto inline-flex rounded-full"

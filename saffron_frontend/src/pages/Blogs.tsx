@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PenLine, Calendar, User, Loader2, ImagePlus, X, Heart, Sparkles, ChefHat } from 'lucide-react';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 import { useToast } from '@/hooks/use-toast';
+import { preloadImages } from '@/utils/imageUtils';
 import saffronHealth from '@/assets/saffron-health.jpg';
 import saffronBeauty from '@/assets/saffron-beauty.jpeg';
 import saffronCulinary from '@/assets/saffron-culinary.jpeg';
@@ -17,6 +18,8 @@ interface Blog {
   created_at: string;
   image_url: string | null;
 }
+
+const BLOGS_CACHE_KEY = 'z-princess-blogs-cache';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Saffron Benefits
@@ -42,6 +45,41 @@ const saffronBenefits = [
   }
 ];
 
+const waitForImage = (imagePath: string, priority: 'high' | 'auto' = 'auto') =>
+  new Promise<void>((resolve) => {
+    if (!imagePath) {
+      resolve();
+      return;
+    }
+
+    const image = new Image();
+    image.decoding = priority === 'high' ? 'sync' : 'async';
+    image.setAttribute('fetchpriority', priority);
+    image.src = imagePath;
+
+    if (image.complete) {
+      resolve();
+      return;
+    }
+
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+  });
+
+const readCachedBlogs = (): Blog[] => {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const cachedBlogs = window.localStorage.getItem(BLOGS_CACHE_KEY);
+    if (!cachedBlogs) return [];
+
+    const parsedBlogs = JSON.parse(cachedBlogs);
+    return Array.isArray(parsedBlogs) ? parsedBlogs : [];
+  } catch {
+    return [];
+  }
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Blogs page
 // ─────────────────────────────────────────────────────────────────────────────
@@ -59,13 +97,62 @@ const Blogs = () => {
 
   const [formData, setFormData] = useState({ title: '', content: '', author_name: '', author_email: '' });
 
-  useEffect(() => { fetchBlogs(); }, []);
+  useEffect(() => {
+    preloadImages(saffronBenefits.map((benefit) => benefit.image), { priority: 'high' });
+
+    const cachedBlogs = readCachedBlogs();
+    if (cachedBlogs.length > 0) {
+      setBlogs(cachedBlogs);
+      setLoading(false);
+
+      const cachedBlogImages = cachedBlogs
+        .slice(0, 12)
+        .flatMap((blog) => (blog.image_url ? [blog.image_url] : []));
+
+      if (cachedBlogImages.length > 0) {
+        preloadImages(cachedBlogImages, { priority: 'high' });
+      }
+    }
+
+    void fetchBlogs();
+  }, []);
 
   const fetchBlogs = async () => {
     try {
       const res = await fetch(`${API_URL}/blogs`);
       const data = await res.json();
-      if (Array.isArray(data)) setBlogs(data);
+      if (Array.isArray(data)) {
+        setBlogs(data);
+
+        try {
+          window.localStorage.setItem(BLOGS_CACHE_KEY, JSON.stringify(data));
+        } catch {
+          // ignore storage failures and continue with live data
+        }
+
+        const allBlogImages = data
+          .flatMap((blog: Blog) => (blog.image_url ? [blog.image_url] : []));
+        const visibleBlogImages = data
+          .slice(0, 6)
+          .flatMap((blog: Blog) => (blog.image_url ? [blog.image_url] : []));
+
+        if (allBlogImages.length > 0) {
+          preloadImages(allBlogImages);
+        }
+
+        if (visibleBlogImages.length > 0) {
+          preloadImages(visibleBlogImages, { priority: 'high' });
+          void Promise.race([
+            Promise.all(
+              visibleBlogImages.map((image, index) =>
+                waitForImage(image, index < 6 ? 'high' : 'auto')
+              )
+            ),
+            new Promise((resolve) => window.setTimeout(resolve, 1000)),
+          ]);
+        }
+
+      }
     } catch (err) { console.error('Failed to fetch blogs:', err); }
     finally { setLoading(false); }
   };
@@ -148,7 +235,7 @@ if (imagePreview) imageUrl = imagePreview;
               <motion.div initial={{ width: 0 }} animate={{ width: '120px' }} transition={{ duration: 1, delay: 0.6 }}
                 className="h-px bg-gradient-to-r from-transparent via-gold to-transparent mx-auto mb-6" />
               <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.8 }}
-                className="text-ivory/70 text-lg hover:text-ivory transition-colors duration-300">
+                className="text-ivory/70 text-md md:text-lg hover:text-ivory transition-colors duration-300">
                 Discover the health benefits, beauty secrets, and culinary magic of the world's most precious spice
               </motion.p>
             </motion.div>
@@ -166,7 +253,14 @@ if (imagePreview) imageUrl = imagePreview;
                   className="relative group rounded-2xl overflow-hidden w-[75%] mx-auto lg:w-full lg:max-w-[340px] h-[400px] md:h-[500px] cursor-pointer"
                 >
                   <div className="absolute inset-0">
-                    <img src={benefit.image} alt={benefit.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                    <img
+                      src={benefit.image}
+                      alt={benefit.title}
+                      fetchPriority="high"
+                      loading="eager"
+                      decoding="async"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
                     <div className={`absolute inset-0 bg-gradient-to-t ${benefit.gradient} transition-opacity duration-500`} />
                   </div>
                   <div className="relative h-full flex flex-col justify-end p-6 text-ivory">
@@ -213,7 +307,7 @@ if (imagePreview) imageUrl = imagePreview;
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                   className="max-w-2xl mx-auto mb-16 overflow-hidden">
                   <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg border border-charcoal/10">
-                    <h3 className="font-sans text-center text-2xl font-light text-purple mb-6">Share Your Knowledge</h3>
+                    <h3 className="font-sans text-center text-2xl font-medium text-purple mb-6">Share Your Knowledge</h3>
                     <form onSubmit={handleSubmit} className="space-y-5">
                       <div>
                         <label className="block text-charcoal/70 text-sm mb-2">Your Name *</label>
@@ -240,7 +334,12 @@ if (imagePreview) imageUrl = imagePreview;
                         <label className="block text-charcoal/70 text-sm mb-2">Cover Image (optional)</label>
                         {imagePreview ? (
                           <div className="relative rounded-2xl overflow-hidden">
-                            <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover" />
+                            <img
+                              src={imagePreview}
+                              alt="Preview"
+                              decoding="async"
+                              className="w-full h-48 object-cover"
+                            />
                             <button type="button" onClick={removeImage}
                               className="absolute top-2 right-2 bg-charcoal/70 text-ivory p-1.5 rounded-full hover:bg-charcoal transition-colors">
                               <X className="w-4 h-4" />
@@ -277,7 +376,7 @@ if (imagePreview) imageUrl = imagePreview;
               )}
             </AnimatePresence>
 
-            {loading ? (
+            {loading && blogs.length === 0 ? (
   <div className="flex justify-center py-20">
     <Loader2 className="w-8 h-8 text-royal-purple animate-spin" />
   </div>
@@ -307,6 +406,9 @@ transition-all duration-500 group cursor-pointer"
             <img
               src={blog.image_url}
               alt={blog.title}
+              fetchPriority={index < 6 ? 'high' : 'auto'}
+              loading={index < 6 ? 'eager' : 'lazy'}
+              decoding="async"
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
           ) : (
@@ -374,12 +476,12 @@ transition-all duration-500 group cursor-pointer"
         <section className="py-16 bg-cream">
           <div className="container mx-auto px-4 md:px-6 lg:px-0">
             <div className="max-w-2xl mx-auto text-center">
-              <h2 className="font-serif text-3xl text-royal-purple mb-4">Subscribe to Our Newsletter</h2>
-              <p className="font-rr text-charcoal/70 mb-8">Get the latest articles, recipes, and exclusive offers delivered to your inbox</p>
+              <h2 className="font-serif text-1xl md:text-3xl  text-royal-purple mb-4">Subscribe to Our Newsletter</h2>
+              <p className="font-rr text-charcoal/70 text-sm mb-8">Get the latest articles, recipes, and exclusive offers delivered to your inbox</p>
               <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
                 <input type="email" required value={newsletterEmail} onChange={(e) => setNewsletterEmail(e.target.value)}
                   placeholder="Enter your email" className="flex-1 px-5 py-3 rounded-full border border-charcoal/20 focus:outline-none focus:border-royal-purple" />
-                <Button variant="royal" type="submit" disabled={isSubscribing} className="min-w-[180px]">
+                <Button variant="royal" type="submit" disabled={isSubscribing} className="w-fit mx-auto sm:w-auto sm:min-w-[180px] px-8">
                   {isSubscribing ? 'Subscribing...' : 'Subscribe'}
                 </Button>
               </form>

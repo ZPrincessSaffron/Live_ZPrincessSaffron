@@ -2,6 +2,7 @@ import User from "../models/userModel.js";
 import Cart from "../models/cartModel.js";
 import Product from "../models/productModel.js";
 import Order from "../models/orderModel.js";
+import ReturnRequest from "../models/returnRequestModel.js";
 import firebaseService from "../services/firebaseService.js";
 
 // @desc    Get user orders
@@ -10,11 +11,23 @@ import firebaseService from "../services/firebaseService.js";
 export const getOrders = async (req, res) => {
     try {
         console.time(`[DB] Order.find (user:${req.user._id})`);
-        const orders = await Order.find({ user: req.user._id })
-            .sort({ createdAt: -1 })
-            .lean();
+        
+        // Fetch orders and return requests in parallel
+        const [orders, returns] = await Promise.all([
+            Order.find({ user: req.user._id }).sort({ createdAt: -1 }).lean(),
+            ReturnRequest.find({ userId: req.user._id }).lean()
+        ]);
+
+        // Append return requests to each order
+        // Note: For multi-item returns, we provide the whole list of returns for that user
+        // and let the frontend filter by orderId.
+        const ordersWithReturns = orders.map(order => ({
+            ...order,
+            returnRequests: returns.filter(r => r.orderId === order.orderId)
+        }));
+
         console.timeEnd(`[DB] Order.find (user:${req.user._id})`);
-        res.json(orders);
+        res.json(ordersWithReturns);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -113,6 +126,61 @@ export const cancelOrder = async (req, res) => {
         firebaseService.sendStatusUpdateNotification(req.user, order, "cancelled");
 
         res.json(order);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Request product return
+// @route   POST /api/orders/:orderId/return/:productId
+// @access  Private
+export const requestProductReturn = async (req, res) => {
+    try {
+        const { orderId, productId } = req.params;
+        const userId = req.user._id;
+
+        const order = await Order.findOne({ orderId: orderId, user: userId });
+
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        // 1. Check if order is delivered
+        if (order.status !== "delivered") {
+            return res.status(400).json({ message: "Only delivered orders can be returned" });
+        }
+
+        // 2. Check 24-hour window
+        if (!order.deliveredAt) {
+            return res.status(400).json({ message: "Delivery timestamp missing. Cannot process return." });
+        }
+
+        const deliveryTime = new Date(order.deliveredAt).getTime();
+        const currentTime = Date.now();
+        const hoursSinceDelivery = (currentTime - deliveryTime) / (1000 * 60 * 60);
+
+        if (hoursSinceDelivery > 24) {
+            return res.status(400).json({ message: "Return period (24 hours) has expired" });
+        }
+
+        // 3. Find product in order and check return status
+        const item = order.items.find(item => item.product_id === parseInt(productId));
+
+        if (!item) {
+            return res.status(404).json({ message: "Product not found in this order" });
+        }
+
+        if (item.isReturned) {
+            return res.status(400).json({ message: "Product is already returned" });
+        }
+
+        // 4. Update return status
+        item.isReturned = true;
+        item.returnRequestedAt = new Date();
+
+        await order.save();
+
+        res.json({ message: "Return requested successfully", order });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

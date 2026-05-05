@@ -1,6 +1,7 @@
 import express from "express";
-import { registerUser, loginUser, googleLogin, forgotPassword, resetPassword } from "../controllers/authController.js";
+import { registerUser, loginUser, googleLogin, forgotPassword, resetPassword, verifyOTP } from "../controllers/authController.js";
 import { validateRequest, schemas } from "../middleware/validationMiddleware.js";
+import { authLimiter } from "../middleware/rateLimiter.js"; // Import authentication rate limiter
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ const router = express.Router();
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         applicatiaon/json:
  *           schema:
  *             type: object
  *             required:
@@ -33,7 +34,7 @@ const router = express.Router();
  *       400:
  *         description: User already exists
  */
-router.post("/register", validateRequest(schemas.auth.register), registerUser);
+router.post("/register", authLimiter, validateRequest(schemas.auth.register), registerUser); // Apply auth rate limit to register
 
 /**
  * @swagger
@@ -61,7 +62,7 @@ router.post("/register", validateRequest(schemas.auth.register), registerUser);
  *       401:
  *         description: Invalid credentials
  */
-router.post("/login", validateRequest(schemas.auth.login), loginUser);
+router.post("/login", authLimiter, validateRequest(schemas.auth.login), loginUser); // Apply auth rate limit to login
 
 /**
  * @swagger
@@ -73,7 +74,7 @@ router.post("/login", validateRequest(schemas.auth.login), loginUser);
  *       200:
  *         description: Google login successful
  */
-router.post("/google", googleLogin);
+router.post("/google", authLimiter, googleLogin); // Apply auth rate limit to google login
 
 /**
  * @swagger
@@ -98,7 +99,7 @@ router.post("/google", googleLogin);
  *       404:
  *         description: User not found
  */
-router.post("/forgot-password", forgotPassword);
+router.post("/forgot-password", authLimiter, forgotPassword); // Apply auth rate limit to forgot password
 
 /**
  * @swagger
@@ -129,7 +130,31 @@ router.post("/forgot-password", forgotPassword);
  *       400:
  *         description: Invalid or expired token
  */
-router.post("/reset-password/:token", resetPassword);
+router.post("/reset-password/:token", authLimiter, resetPassword); // Apply auth rate limit to reset password
+
+/**
+ * @swagger
+ * /api/auth/verify-otp:
+ *   post:
+ *     summary: Verify OTP and login
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - otp
+ *               - deviceId
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *       400:
+ *         description: Invalid or expired OTP
+ */
+router.post("/verify-otp", authLimiter, validateRequest(schemas.auth.verifyOtp), verifyOTP);
 
 export default router;
 

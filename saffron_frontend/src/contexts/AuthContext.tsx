@@ -15,7 +15,8 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string, deviceId?: string) => Promise<{ error: any; data?: any }>;
+  verifyOtp: (userId: string, otp: string, deviceId: string) => Promise<{ error: any }>;
   signInWithGoogle: (token: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   updateUserData: (updatedUser: Partial<User>) => void;
@@ -50,12 +51,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, deviceId?: string) => {
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, fullName }),
+        body: JSON.stringify({ email, password, fullName, deviceId }),
       });
 
       const data = await response.json();
@@ -64,20 +65,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(data.message || "Registration failed");
       }
 
+      if (data.otpRequired) {
+        return { error: null, data };
+      }
+
       setUser(data);
       localStorage.setItem("saffron_user", JSON.stringify(data));
-      return { error: null };
-    } catch (error) {
-      return { error };
+      return { error: null, data };
+    } catch (error: any) {
+      return { error: error.message, data: null };
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, deviceId?: string) => {
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, deviceId }),
       });
 
       const data = await response.json();
@@ -86,21 +91,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(data.message || "Login failed");
       }
 
+      // If OTP is required, we return early and let the component handle it
+      if (data.otpRequired) {
+        return { error: null, data };
+      }
+
       setUser(data);
       localStorage.setItem("saffron_user", JSON.stringify(data));
-      return { error: null };
-    } catch (error) {
-      return { error };
+      return { error: null, data };
+    } catch (error: any) {
+      return { error: error.message || "Login failed", data: null };
     }
   };
 
-  const signInWithGoogle = async (token: string) => {
+  const verifyOtp = async (userId: string, otp: string, deviceId: string) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, otp, deviceId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "OTP Verification failed");
+      }
+
+      setUser(data);
+      localStorage.setItem("saffron_user", JSON.stringify(data));
+      return { error: null, data };
+    } catch (error: any) {
+      return { error: error.message || "Verification failed", data: null };
+    }
+  };
+
+  const signInWithGoogle = async (token: string, deviceId?: string) => {
     try {
       // Send as both so backend can decide which one it is
       const response = await fetch(`${API_URL}/auth/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tokenId: token, accessToken: token }),
+        body: JSON.stringify({ tokenId: token, accessToken: token, deviceId }),
       });
 
       const data = await response.json();
@@ -109,11 +141,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(data.message || "Google login failed");
       }
 
+      // Handle OTP requirement if backend implements it for Google
+      if (data.otpRequired) {
+        return { error: null, data };
+      }
+
       setUser(data);
       localStorage.setItem("saffron_user", JSON.stringify(data));
-      return { error: null };
-    } catch (error) {
-      return { error };
+      return { error: null, data };
+    } catch (error: any) {
+      return { error: error.message || "Google login failed", data: null };
     }
   };
 
@@ -167,13 +204,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       return { error: null };
-    } catch (error) {
-      return { error };
+    } catch (error: any) {
+      return { error: error.message || "Password reset failed", data: null };
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signUp, signIn, signInWithGoogle, signOut, updateUserData, forgotPassword, resetPassword }}>
+    <AuthContext.Provider value={{ user, isLoading, signUp, signIn, verifyOtp, signInWithGoogle, signOut, updateUserData, forgotPassword, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

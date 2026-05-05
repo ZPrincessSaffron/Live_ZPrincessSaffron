@@ -53,7 +53,7 @@ const productSchema = new mongoose.Schema(
 
 // Automatic tag management based on stock
 productSchema.pre("save", async function () {
-    if (this.isModified("stock")) {
+    if (this.isNew || this.isModified("stock")) {
         if (this.stock === 0) {
             this.tag = "Out of Stock";
         } else if (this.stock > 0 && this.tag === "Out of Stock") {

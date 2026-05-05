@@ -55,8 +55,18 @@ const orderSchema = new mongoose.Schema(
                     type: Number,
                     required: true,
                 },
+                isReturned: {
+                    type: Boolean,
+                    default: false,
+                },
+                returnRequestedAt: {
+                    type: Date,
+                },
             },
         ],
+        deliveredAt: {
+            type: Date,
+        },
         shippingDetails: {
             name: { type: String, required: true },
             email: { type: String, required: true },

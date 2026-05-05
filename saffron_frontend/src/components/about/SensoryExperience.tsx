@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import dancer from "@/assets/dancer1.webp";
-import dancer2 from "@/assets/dance2.jpeg";
+import dancer2 from "@/assets/dancer2.png";
+import { preloadImages } from "@/utils/imageUtils";
 
 const sections = [
   { title: "Who We Are", number: "01", accent: "#C9A84C", accent2: "#F0D080", desc: "Fruit of passion, tradition, and technological excellence. Launched by HeyRam Infrastructure to bridge the digital future with age-old agricultural heritage." },
@@ -40,6 +41,10 @@ export default function SensoryExperience() {
     timerRef.current = setInterval(advance, AUTO_MS);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [active, transitioning]);
+
+  useEffect(() => {
+    preloadImages([dancer, dancer2], { priority: "high" });
+  }, []);
 
   const current = sections[active];
   const prevSection = prev !== null ? sections[prev] : null;
@@ -110,11 +115,11 @@ export default function SensoryExperience() {
 
         @keyframes dancerIn {
           from { opacity: 0; transform: translateY(-50%) scale(0.94); }
-          to   { opacity: 0.04; transform: translateY(-50%) scale(1); }
+          to   { opacity: 0.1; transform: translateY(-50%) scale(1); }
         }
         @keyframes dancerInR {
-          from { opacity: 0; transform: translateY(-50%) scaleX(-1) scale(0.94); }
-          to   { opacity: 0.04; transform: translateY(-50%) scaleX(-1) scale(1); }
+          from { opacity: 0; transform: translateY(-50%)  scale(0.94); }
+          to   { opacity: 0.1; transform: translateY(-50%)  scale(1); }
         }
 
         .panel-new {
@@ -135,50 +140,54 @@ export default function SensoryExperience() {
         .desc-in {
           animation: fadeUp 0.6s ease-out 0.45s both;
         }
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
           .experience-container { 
-            padding: 100px 16px 60px !important; 
-            min-height: 85vh !important; 
-            overflow: visible !important; 
+            padding: 100px 24px 60px !important; 
+            min-height: 100svh !important; 
             display: flex !important;
             flex-direction: column !important;
-            justify-content: flex-start !important;
+            justify-content: center !important;
           }
           .experience-title { 
-            font-size: 1.4rem !important; 
-            margin-bottom: 2rem !important;
+            font-size: clamp(1.4rem, 5vw, 2.2rem) !important; 
+            margin-bottom: 2.5rem !important;
             line-height: 1.3 !important;
+            max-width: 95% !important;
           }
           .panel-container { 
             height: auto !important; 
-            min-height: 280px !important; 
-            margin-top: 4.5rem !important; /* Move down to reveal dancer */
-            max-width: 88% !important;   /* Reduce width */
+            min-height: 350px !important; 
+            margin-top: 1.5rem !important;
+            max-width: 86% !important;
+            width: 86% !important;
             margin-left: auto !important;
             margin-right: auto !important;
-            
-            overflow: visible !important;
           }
           .num-column { display: none !important; }
           .content-panel { 
-            padding: 24px 18px !important; 
-            background: rgba(30, 15, 56, 0.92) !important; 
-            backdrop-filter: blur(12px) !important;
-            border-radius: 8px !important;
+            padding: 36px 24px !important; 
+            background: rgba(30, 15, 56, 0.96) !important; 
+            backdrop-filter: blur(15px) !important;
+            border-radius: 20px !important;
           }
-          .content-title { font-size: 19px !important; margin-bottom: 12px !important; }
-          .content-desc { font-size: 13.5px !important; line-height: 1.55 !important; }
-          .quote-text { font-size: 0.95rem !important; margin-top: 32px !important; line-height: 1.6 !important; }
+          .content-title { font-size: clamp(20px, 6vw, 30px) !important; }
+          .content-desc { font-size: clamp(14px, 4vw, 18px) !important; }
+          .quote-text { font-size: clamp(1rem, 4vw, 1.5rem) !important; margin-top: 40px !important; }
           .dancer-mobile { 
+            position: absolute !important;
             inset: 0 !important; 
             width: 100% !important; 
             height: 100% !important; 
             object-fit: cover !important; 
             object-position: center !important;
-            opacity: 0.15 !important; 
-            z-index: 2 !important;
-            transform: none !important; 
+            opacity: 0.1 !important; 
+            z-index: 1 !important;
+            animation: none !important;
+            transform: none !important;
+            left: 0 !important;
+            top: 0 !important;
           }
+          .dancer-desktop-hide { display: none !important; }
         }
       `}</style>
 
@@ -196,14 +205,14 @@ export default function SensoryExperience() {
           overflow: "hidden",
         }}>
 
-        <img src={dancer} alt="" aria-hidden className="dancer-mobile" style={{
-          position: "absolute", left: "-150px", top: "50%", height: "90%",
+        <img src={dancer} alt="" aria-hidden fetchPriority="high" loading="eager" decoding="async" className="dancer-mobile" style={{
+          position: "absolute", left: "-130px", top: "50%", height: "90%",
           objectFit: "contain", filter: "grayscale(100%) contrast(70%)",
           pointerEvents: "none", zIndex: 0,
           animation: "dancerIn 6s ease-out forwards",
         }} />
-        <img src={dancer2} alt="" aria-hidden className="dancer-mobile hidden md:block" style={{
-          position: "absolute", right: "1%", top: "50%", height: "90%",
+        <img src={dancer2} alt="" aria-hidden fetchPriority="high" loading="eager" decoding="async" className="dancer-mobile dancer-desktop-hide hidden lg:block" style={{
+          position: "absolute", right: "-2%", top: "50%", height: "80%",
           objectFit: "contain", filter: "grayscale(100%) contrast(70%)",
           pointerEvents: "none", zIndex: 0,
           animation: "dancerInR 6s ease-out forwards",
@@ -232,9 +241,10 @@ export default function SensoryExperience() {
             position: "relative",
             zIndex: 3,
             width: "100%",
-            maxWidth: "900px",
-            height: "400px",
+            maxWidth: "760px",
+            height: "370px",
             overflow: "hidden",
+            margin: "0 auto",
           }}>
 
           {/* OUTGOING PANEL */}

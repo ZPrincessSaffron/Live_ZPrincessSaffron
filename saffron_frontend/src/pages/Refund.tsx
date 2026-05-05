@@ -508,7 +508,7 @@ const Refund = () => {
 
                 <div className="space-y-4 max-w-3xl mx-auto">
                   {[
-                    "Contact us within 7 days with order details.",
+                    "Contact us within 24 hours with order details.",
                     "Provide clear photo/video proof.",
                     "Ship product securely after approval.",
                     "Refund processed after inspection.",
@@ -573,7 +573,7 @@ const Refund = () => {
 
                 <div className="grid md:grid-cols-1 centre gap-4 max-w-sm mx-auto">
                   {[
-                    "Credit/Debit Card — 5 to 7 business days",
+                    "Credit/Debit Card — 3 to 5 business days",
                     "UPI — 3 to 5 business days",
                     "Net Banking — 5 to 7 business days",
                     "COD — 7 to 10 business days (Bank Transfer)",
@@ -721,11 +721,11 @@ const Refund = () => {
                   transition={{ delay: 0.35, duration: 0.6 }}
                   className="flex flex-col sm:flex-row justify-center gap-6"
                 >
-                  <MagneticLink href="mailto:zprincessaffron07@gmail.com">
-                    zprincessaffron07@gmail.com
+                  <MagneticLink href="mailto:Crocus@zprincesssaffron.com">
+                    Crocus@zprincesssaffron.com
                   </MagneticLink>
-                  <MagneticLink href="tel:+917200150588">
-                    +91 72001 50588
+                  <MagneticLink href="tel:+91 75388 70577">
+                    +91 75388 70577
                   </MagneticLink>
                 </motion.div>
               </motion.div>

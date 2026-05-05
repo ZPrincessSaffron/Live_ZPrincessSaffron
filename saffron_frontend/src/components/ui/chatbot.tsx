@@ -112,10 +112,12 @@ export const ChatBot = ({ externalOpen, onClose }: ChatBotProps) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 60, scale: 0.92 }}
             transition={{ type: "spring", damping: 26, stiffness: 320 }}
-            className="fixed bottom-8 right-8 z-50 flex flex-col overflow-hidden shadow-2xl"
+            className="fixed bottom-24 left-3 right-3 sm:left-auto sm:right-6 z-50 flex flex-col overflow-hidden shadow-2xl"
             style={{
-              width: 380,
-              height: 560,
+              width: "min(380px, calc(100vw - 1.5rem))",
+              maxWidth: "calc(100vw - 1.5rem)",
+              height: "min(560px, calc(100vh - 7rem))",
+              maxHeight: "calc(100vh - 7rem)",
               borderRadius: 20,
               
               background: "#EDEEE8",

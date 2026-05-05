@@ -1,6 +1,7 @@
 import User from "../models/userModel.js";
 import Product from "../models/productModel.js";
 import Order from "../models/orderModel.js";
+import ReturnRequest from "../models/returnRequestModel.js";
 import firebaseService from "../services/firebaseService.js";
 
 // @desc    Get all orders (admin)
@@ -9,13 +10,25 @@ import firebaseService from "../services/firebaseService.js";
 export const getAllOrders = async (req, res) => {
     try {
         console.time("[DB] Admin.getAllOrders");
-        const orders = await Order.find({})
-            .populate("user", "fullName email phone")
-            .sort({ createdAt: -1 })
-            .lean()
-            .limit(200); // Added safety limit
+        
+        // Fetch orders and return requests in parallel for better performance
+        const [orders, returns] = await Promise.all([
+            Order.find({})
+                .populate("user", "fullName email phone")
+                .sort({ createdAt: -1 })
+                .lean()
+                .limit(200),
+            ReturnRequest.find({}).lean()
+        ]);
+
+        // Map return requests to their corresponding orders
+        const ordersWithReturns = orders.map(order => ({
+            ...order,
+            returnRequest: returns.find(r => r.orderId === order.orderId) || null
+        }));
+
         console.timeEnd("[DB] Admin.getAllOrders");
-        res.json(orders);
+        res.json(ordersWithReturns);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -139,3 +152,14 @@ export const getSalesReport = async (req, res) => {
     }
 };
 
+// @desc    Get pending return count
+// @route   GET /api/admin/returns/count
+// @access  Private/Admin
+export const getPendingReturnCount = async (req, res) => {
+    try {
+        const count = await ReturnRequest.countDocuments({ status: "requested" });
+        res.json({ pendingReturns: count });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

@@ -8,7 +8,7 @@ export const getProducts = async (req, res) => {
         console.time("[DB] Product.find (all)");
         const products = await Product.find({})
             .lean()
-            .select("id name price originalPrice rating reviews image tag category description stock");
+            .select("id name price originalPrice rating reviews image tag category stock");
         console.timeEnd("[DB] Product.find (all)");
         res.json(products);
     } catch (error) {

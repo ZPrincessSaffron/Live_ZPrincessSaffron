@@ -7,7 +7,7 @@ import heroVideo from "@/assets/hero-video.mp4";
 
 const HeroSection = () => {
   return (
-    <section className="relative h-[100svh] md:min-h-screen w-screen flex items-center justify-center overflow-hidden">
+    <section className="relative h-[100svh] w-full flex items-center justify-center overflow-hidden">
 
        {/* Background Video */}
 <div className="absolute inset-0">
@@ -34,7 +34,7 @@ const HeroSection = () => {
 
           {/* Subtitle */}
           <motion.p
-            className="font-sans text-[#C6A85A] text-xs sm:text-sm tracking-[0.35em] uppercase mb-8 font-medium"
+            className="font-sans text-[#C6A85A] text-xs sm:text-sm tracking-[0.35em] uppercase -mt-2 mb-10 font-medium"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.2, ease: [0.22,1,0.36,1] }}

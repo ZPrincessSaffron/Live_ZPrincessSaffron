@@ -16,10 +16,17 @@ export const schemas = {
             fullName: Joi.string().required().min(2),
             email: Joi.string().email().required(),
             password: Joi.string().required().min(6),
+            deviceId: Joi.string().optional(),
         }),
         login: Joi.object({
             email: Joi.string().email().required(),
             password: Joi.string().required(),
+            deviceId: Joi.string().optional(),
+        }),
+        verifyOtp: Joi.object({
+            userId: Joi.string().required(),
+            otp: Joi.string().length(6).required(),
+            deviceId: Joi.string().required(),
         }),
     },
     product: {

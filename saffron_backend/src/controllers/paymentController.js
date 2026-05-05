@@ -1,6 +1,8 @@
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import Order from "../models/orderModel.js";
+import Cart from "../models/cartModel.js";
+import Product from "../models/productModel.js";
 import firebaseService from "../services/firebaseService.js";
 import dotenv from "dotenv";
 dotenv.config();
@@ -14,11 +16,28 @@ const razorpay = new Razorpay({
 // @route   POST /api/payments/create-order
 // @access  Private
 export const createRazorpayOrder = async (req, res) => {
-    const { amount, currency } = req.body;
+    const { currency } = req.body;
 
     try {
+        // 1. Fetch user's cart from DB
+        const cart = await Cart.findOne({ user: req.user._id });
+        
+        if (!cart || cart.items.length === 0) {
+            return res.status(400).json({ message: "Cart is empty" });
+        }
+
+        // 2. Fetch real product prices and calculate total amount
+        let totalAmount = 0;
+        for (const item of cart.items) {
+            const product = await Product.findOne({ id: item.product_id });
+            if (!product) {
+                return res.status(404).json({ message: `Product not found: ${item.product_id}` });
+            }
+            totalAmount += product.price * item.quantity;
+        }
+
         const options = {
-            amount: Math.round(amount * 100), // amount in paise
+            amount: Math.round(totalAmount * 100), // amount in paise
             currency: currency || "INR",
             receipt: `receipt_${Math.random().toString(36).substring(2, 11)}`,
         };

@@ -7,6 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Profile, Address } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ShippingAddressProps {
   profile: Profile | null;
@@ -94,19 +101,23 @@ const ShippingAddress = ({
     setIsSaving(false);
   };
 
-  const selectedCountry = Country.getAllCountries().find(c => c.name === formData.shipping_country);
+  const countries = Country.getAllCountries();
+  const selectedCountry = countries.find(c => c.name === formData.shipping_country);
   const states = selectedCountry ? State.getStatesOfCountry(selectedCountry.isoCode) : [];
   const selectedState = states.find(s => s.name === formData.shipping_state);
   const cities = selectedCountry && selectedState ? City.getCitiesOfState(selectedCountry.isoCode, selectedState.isoCode) : [];
 
   const addresses = profile?.addresses || [];
+  const addressSelectTriggerClassName = "h-11 rounded-full border-gold/20 bg-white/80 px-5 text-sm font-rr text-royal-purple shadow-[0_8px_24px_rgba(46,15,58,0.08)] focus:ring-gold/40";
+  const addressSelectContentClassName = "rounded-[1.5rem] border-gold/15 bg-[#fffaf4]/95 shadow-[0_18px_45px_rgba(46,15,58,0.14)]";
+  const addressSelectItemClassName = "rounded-xl py-1.5 pl-8 pr-3 text-[13px] font-rr leading-5 text-royal-purple/85 focus:bg-gold/12 focus:text-royal-purple";
 
   return (
     <div className="flex justify-center w-full">
-      <div className="w-full max-w-4xl bg-white/70 backdrop-blur-md border border-white/30 rounded-2xl shadow-[0_10px_60px_rgba(0,0,0,0.08)] p-10">
+      <div className="w-full max-w-4xl bg-white/70 backdrop-blur-md border border-white/30 rounded-2xl shadow-[0_10px_60px_rgba(0,0,0,0.08)] p-5 md:p-10">
         
-        <div className="text-center md:text-left mb-12">
-          <h2 className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-center tracking-[0.30em] text-royal-purple uppercase">
+        <div className="text-center mb-12">
+          <h2 className="font-serif text-xl sm:text-2xl md:text-3xl tracking-[0.30em] text-royal-purple uppercase">
             Shipping Addresses
           </h2>
         </div>
@@ -132,24 +143,77 @@ const ShippingAddress = ({
               </div>
               <div className="space-y-3">
                 <Label>Country</Label>
-                <select value={formData.shipping_country} onChange={(e) => setFormData(p => ({ ...p, shipping_country: e.target.value, shipping_state: "", shipping_city: "" }))} className="w-full rounded-full h-11 px-6 border border-border bg-background">
-                  <option value="">Select Country</option>
-                  {Country.getAllCountries().map(c => <option key={c.isoCode} value={c.name}>{c.name}</option>)}
-                </select>
+                <Select
+                  value={formData.shipping_country || undefined}
+                  onValueChange={(value) =>
+                    setFormData((p) => ({ ...p, shipping_country: value, shipping_state: "", shipping_city: "" }))
+                  }
+                >
+                  <SelectTrigger className={addressSelectTriggerClassName}>
+                    <SelectValue placeholder="Select Country" />
+                  </SelectTrigger>
+                  <SelectContent className={addressSelectContentClassName}>
+                    {countries.map((country) => (
+                      <SelectItem
+                        key={country.isoCode}
+                        value={country.name}
+                        className={addressSelectItemClassName}
+                      >
+                        {country.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-3">
                 <Label>State</Label>
-                <select value={formData.shipping_state} onChange={(e) => setFormData(p => ({ ...p, shipping_state: e.target.value, shipping_city: "" }))} disabled={!selectedCountry} className="w-full rounded-full h-11 px-6 border border-border bg-background">
-                  <option value="">Select State</option>
-                  {states.map(s => <option key={s.isoCode} value={s.name}>{s.name}</option>)}
-                </select>
+                <Select
+                  value={formData.shipping_state || undefined}
+                  onValueChange={(value) =>
+                    setFormData((p) => ({ ...p, shipping_state: value, shipping_city: "" }))
+                  }
+                  disabled={!selectedCountry}
+                >
+                  <SelectTrigger className={addressSelectTriggerClassName}>
+                    <SelectValue placeholder="Select State" />
+                  </SelectTrigger>
+                  <SelectContent className={addressSelectContentClassName}>
+                    {states.map((state) => (
+                      <SelectItem
+                        key={state.isoCode}
+                        value={state.name}
+                        className={addressSelectItemClassName}
+                      >
+                        {state.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-3">
                 <Label>City</Label>
-                <select value={formData.shipping_city} onChange={(e) => setFormData(p => ({ ...p, shipping_city: e.target.value }))} disabled={!selectedState} className="w-full rounded-full h-11 px-6 border border-border bg-background">
-                  <option value="">Select City</option>
-                  {cities.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-                </select>
+                <Select
+                  value={formData.shipping_city || undefined}
+                  onValueChange={(value) =>
+                    setFormData((p) => ({ ...p, shipping_city: value }))
+                  }
+                  disabled={!selectedState}
+                >
+                  <SelectTrigger className={addressSelectTriggerClassName}>
+                    <SelectValue placeholder="Select City" />
+                  </SelectTrigger>
+                  <SelectContent className={addressSelectContentClassName}>
+                    {cities.map((city) => (
+                      <SelectItem
+                        key={city.name}
+                        value={city.name}
+                        className={addressSelectItemClassName}
+                      >
+                        {city.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-3">
                 <Label>Pincode</Label>
@@ -161,11 +225,22 @@ const ShippingAddress = ({
               </div>
             </div>
 
-            <div className="flex justify-center gap-6 mt-12">
-              <Button variant="royal" onClick={handleSave} disabled={isSaving}>
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 mt-12 w-full">
+              <Button 
+                variant="royal" 
+                onClick={handleSave} 
+                disabled={isSaving}
+                className="w-full sm:w-auto min-w-0 sm:min-w-[210px]"
+              >
                 {isSaving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</> : editingId ? "Update Address" : "Save Address"}
               </Button>
-              <Button variant="royal" onClick={resetForm}>Cancel</Button>
+              <Button 
+                variant="royalOutline" 
+                onClick={resetForm}
+                className="w-full sm:w-auto min-w-0 sm:min-w-[210px]"
+              >
+                Cancel
+              </Button>
             </div>
           </div>
         ) : (

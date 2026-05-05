@@ -168,7 +168,7 @@ const TestimonialsSection = () => {
             <p className="font-sans text-gold text-sm tracking-[0.35em] uppercase mb-4">
               Customer Love
             </p>
-            <h2 className="font-serif text-4xl md:text-5xl lg:text-5xl text-royal-purple leading-tight">
+            <h2 className="font-serif text-xl md:text-4xl lg:text-5xl text-royal-purple leading-tight">
               What Our Customers Say
             </h2>
             <div className="w-24 h-px bg-gradient-to-r from-transparent via-gold to-transparent mx-auto mt-6" />
@@ -226,7 +226,7 @@ const TestimonialsSection = () => {
                 onMouseEnter={() => setIsPaused(true)}
                 onMouseLeave={() => setIsPaused(false)}
                 className="
-                  max-w-[300px] md:min-w-[360px] lg:max-w-[300px] max-h-[300px]
+                  w-[280px] md:w-[340px] flex-shrink-0
                   bg-card p-6 md:p-8 rounded-xl
                   shadow-card transition-all duration-500
                   hover:shadow-elegant hover:-translate-y-1

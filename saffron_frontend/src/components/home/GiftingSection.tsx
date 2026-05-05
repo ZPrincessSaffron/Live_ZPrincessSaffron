@@ -49,6 +49,8 @@ const GiftingSection = () => {
               <img
                 src={giftBox}
                 alt="Premium Gift Collection"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-auto transition-transform duration-700 group-hover:scale-105"
               />
 

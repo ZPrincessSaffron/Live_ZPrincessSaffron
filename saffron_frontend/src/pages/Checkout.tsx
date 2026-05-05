@@ -15,6 +15,9 @@ import { Button } from "@/components/ui/button";
 import { resolveProductImage } from "@/utils/imageUtils";
 import { useRazorpay } from "@/hooks/useRazorpay";
 
+const NAME_REGEX = /^[A-Za-z\s.'-]+$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const Checkout = () => {
   const { user } = useAuth();
   const { cartItems, clearCart } = useCart();
@@ -92,24 +95,87 @@ const Checkout = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+
+    let nextValue = value;
+
+    if (name === "name") {
+      nextValue = value.replace(/\d/g, "");
+    }
+
+    if (name === "phone") {
+      nextValue = value.replace(/[^\d+\s-]/g, "");
+    }
+
     setShippingDetails((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: nextValue,
     }));
   };
 
   const validateForm = () => {
-    const requiredFields = ["name", "phone", "address", "city", "state", "pincode"];
+    const requiredFields: Array<keyof typeof shippingDetails> = [
+      "name",
+      "email",
+      "phone",
+      "address",
+      "city",
+      "state",
+      "pincode",
+    ];
+    const fieldLabels: Record<keyof typeof shippingDetails, string> = {
+      name: "full name",
+      email: "email",
+      phone: "phone number",
+      address: "address",
+      city: "city",
+      state: "state",
+      pincode: "pincode",
+    };
+
     for (const field of requiredFields) {
-      if (!shippingDetails[field as keyof typeof shippingDetails]) {
+      if (!shippingDetails[field].trim()) {
         toast({
           title: "Missing Information",
-          description: `Please enter your ${field}`,
+          description: `Please enter your ${fieldLabels[field]}`,
           variant: "destructive",
         });
         return false;
       }
     }
+
+    const trimmedName = shippingDetails.name.trim();
+    if (!NAME_REGEX.test(trimmedName)) {
+      toast({
+        title: "Invalid Name",
+        description: "Full name should contain only letters.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!EMAIL_REGEX.test(shippingDetails.email.trim())) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    const phoneDigits = shippingDetails.phone.replace(/\D/g, "");
+    const isValidPhone =
+      phoneDigits.length === 10 ||
+      (phoneDigits.length === 12 && phoneDigits.startsWith("91"));
+
+    if (!isValidPhone) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid phone number.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     return true;
   };
 
@@ -321,10 +387,10 @@ const Checkout = () => {
               <div className="lg:col-span-2 space-y-8">
                 {/* Delivery Address Section */}
                 <div className="bg-card p-6 rounded-sm shadow-card">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                    <h2 className="font-serif text-xl text-royal-purple flex items-center gap-2">
-                      <Truck className="w-5 h-5" />
-                      Delivery Address
+                  <div className="flex flex-row items-center justify-between gap-2 mb-6">
+                    <h2 className="font-serif text-sm md:text-xl text-royal-purple flex items-center gap-2">
+                      <Truck className="w-4 h-4 md:w-5 md:h-5" />
+                      <span className="whitespace-nowrap">Delivery Address</span>
                     </h2>
                     <Button
                       type="button"
@@ -332,10 +398,9 @@ const Checkout = () => {
                       size="sm"
                       onClick={handleFetchFromProfile}
                       disabled={profileLoading}
-                      className="flex items-center justify-center gap-3 whitespace-nowrap"
+                      className="flex items-center justify-center gap-1 md:gap-3 text-[10px] md:text-sm h-8 md:h-10 px-2 md:px-4"
                     >
-
-                      <span className="leading-none">Fetch from Profile</span>
+                      <span className="leading-none whitespace-nowrap">Fetch from Profile</span>
                     </Button>
                   </div>
 
@@ -438,6 +503,8 @@ const Checkout = () => {
                         <img
                           src={resolveProductImage(product!.image)}
                           alt={product!.name}
+                          loading="lazy"
+                          decoding="async"
                           className="w-16 h-16 object-cover rounded-lg"
                         />
                         <div className="flex-1">

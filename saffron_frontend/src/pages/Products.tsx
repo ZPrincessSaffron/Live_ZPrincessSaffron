@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Heart, ShoppingCart, Share2, Star, SlidersHorizontal, X, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
@@ -7,7 +7,7 @@ import { useCart } from "@/hooks/useCart";
 import { useLikedProducts } from "@/hooks/useLikedProducts";
 import heroVideo from "@/assets/products-hero-video.mp4";
 import { Button } from "@/components/ui/button";
-import { resolveProductImage } from "@/utils/imageUtils";
+import { preloadImages, resolveProductImage } from "@/utils/imageUtils";
 
 const priceRanges = [
   { key: "all", label: "All Prices", min: 0, max: Infinity },
@@ -29,6 +29,29 @@ const saffronTypes = [
   { key: "powder", label: "Powder" },
 ];
 
+const waitForImage = (imagePath: string, priority: "high" | "auto" = "auto") =>
+  new Promise<void>((resolve) => {
+    const src = resolveProductImage(imagePath);
+
+    if (!src) {
+      resolve();
+      return;
+    }
+
+    const image = new Image();
+    image.decoding = priority === "high" ? "sync" : "async";
+    image.setAttribute("fetchpriority", priority);
+    image.src = src;
+
+    if (image.complete) {
+      resolve();
+      return;
+    }
+
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+  });
+
 const Products = () => {
   const [priceFilter, setPriceFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
@@ -40,24 +63,68 @@ const Products = () => {
   const { toggleLike, isProductLiked } = useLikedProducts();
   const [apiProducts, setApiProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const productsGridRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    const fallbackProducts = products
+      .filter((product) => product.id !== 2 && product.id !== "2")
+      .slice(0, 6);
+
+    preloadImages(fallbackProducts.slice(0, 2).map((product) => product.image), { priority: "high" });
+    preloadImages(fallbackProducts.slice(2).map((product) => product.image));
+
+    let isActive = true;
+    const revealProductsWhenReady = async (productList: any[]) => {
+      const visibleProducts = productList.slice(0, 6);
+
+      await Promise.all(
+        visibleProducts.map((product, index) =>
+          waitForImage(product.image, index < 2 ? "high" : "auto")
+        )
+      );
+
+      if (isActive) {
+        window.clearTimeout(loadingTimeout);
+        setIsLoading(false);
+      }
+    };
+
+    const loadingTimeout = window.setTimeout(() => {
+      if (isActive) {
+        setIsLoading(false);
+      }
+    }, 1000);
+
     const fetchProducts = async () => {
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/products`);
         if (!response.ok) throw new Error("Failed to fetch products");
         const data = await response.json();
-        setApiProducts(data);
+        const criticalProducts = data
+          .filter((product: any) => product.id !== 2 && product.id !== "2")
+          .slice(0, 6);
+
+        preloadImages(criticalProducts.slice(0, 2).map((product: any) => product.image), { priority: "high" });
+        preloadImages(criticalProducts.slice(2).map((product: any) => product.image));
+        if (isActive) {
+          setApiProducts(data);
+        }
+
+        await revealProductsWhenReady(criticalProducts);
       } catch (error) {
         console.error("Error fetching products:", error);
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    fetchProducts();
-    const timer = setTimeout(() => setShowHeroText(true), 600);
-    return () => clearTimeout(timer);
+    void revealProductsWhenReady(fallbackProducts);
+    void fetchProducts();
+
+    const timer = window.setTimeout(() => setShowHeroText(true), 50);
+    return () => {
+      isActive = false;
+      window.clearTimeout(loadingTimeout);
+      window.clearTimeout(timer);
+    };
   }, []);
 
   const scrollToProducts = () => {
@@ -66,6 +133,7 @@ const Products = () => {
 
   const filteredProducts = useMemo(() => {
     let result = apiProducts.length > 0 ? [...apiProducts] : [...products];
+    result = result.filter(p => p.id !== 2 && p.id !== "2");
     const priceRange = priceRanges.find((p) => p.key === priceFilter);
     if (priceRange && priceFilter !== "all") {
       result = result.filter(
@@ -97,6 +165,50 @@ const Products = () => {
     return result;
   }, [apiProducts, priceFilter, ratingFilter, typeFilter, sortBy]);
 
+  useEffect(() => {
+    if (isLoading || filteredProducts.length === 0) return;
+
+    const aboveFoldProducts = filteredProducts.slice(0, 6);
+    preloadImages(aboveFoldProducts.slice(0, 2).map((product) => product.image), { priority: "high" });
+    preloadImages(aboveFoldProducts.slice(2).map((product) => product.image));
+  }, [filteredProducts, isLoading]);
+
+  useEffect(() => {
+    if (isLoading || filteredProducts.length === 0) return;
+
+    if (typeof IntersectionObserver === "undefined") {
+      preloadImages(filteredProducts.map((product) => product.image));
+      return;
+    }
+
+    const productCards = productsGridRef.current?.querySelectorAll<HTMLElement>("[data-product-index]");
+    if (!productCards || productCards.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+
+          const index = Number(entry.target.getAttribute("data-product-index"));
+          if (Number.isNaN(index)) return;
+
+          const upcomingProducts = filteredProducts.slice(index, index + 6);
+          preloadImages(upcomingProducts.map((product) => product.image), {
+            priority: index === 0 ? "high" : "auto",
+          });
+        });
+      },
+      {
+        rootMargin: "900px 0px",
+        threshold: 0.01,
+      }
+    );
+
+    productCards.forEach((card) => observer.observe(card));
+
+    return () => observer.disconnect();
+  }, [filteredProducts, isLoading]);
+
   const activeFiltersCount = [priceFilter, ratingFilter, typeFilter].filter(
     (f) => f !== "all"
   ).length;
@@ -110,7 +222,7 @@ const Products = () => {
 
   return (
     <Layout>
-      <section className="relative h-screen w-full overflow-hidden">
+      <section className="relative h-[100svh] w-full overflow-hidden">
         <video
           autoPlay
           loop
@@ -132,7 +244,7 @@ const Products = () => {
             <motion.div
               initial={{ scaleX: 0 }}
               animate={{ scaleX: showHeroText ? 1 : 0 }}
-              transition={{ duration: 1, delay: 1.2 }}
+              transition={{ duration: 1, delay: 0 }}
               className="w-24 h-px bg-gradient-to-r from-transparent via-gold to-transparent mx-auto"
             />
             <br />
@@ -140,7 +252,7 @@ const Products = () => {
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: showHeroText ? 1 : 0, y: showHeroText ? 0 : 20 }}
-              transition={{ duration: 0.8, delay: 0.5 }}
+              transition={{ duration: 0.8, delay: 0 }}
               className="font-sans font-medium text-gold text-sm tracking-[0.4em] uppercase mb-6"
             >
               The Royal Collection
@@ -148,8 +260,8 @@ const Products = () => {
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: showHeroText ? 1 : 0, y: showHeroText ? 0 : 30 }}
-              transition={{ duration: 1, delay: 0.7 }}
-              className="font-serif text-4xl md:text-4xl lg:text-6xl text-ivory mb-8 leading-tight"
+              transition={{ duration: 1, delay: 0.5 }}
+              className="font-cinzel text-[clamp(1.5rem,7vw,4rem)] font-medium text-ivory mb-8 leading-[1.2]"
             >
               Each product begins
               <br />
@@ -159,7 +271,7 @@ const Products = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: showHeroText ? 1 : 0, y: showHeroText ? 0 : 20 }}
               transition={{ duration: 0.8, delay: 1 }}
-              className="font-sans text-white text-lg md:text-xl tracking-[0.1em] mb-12"
+              className="font-sans text-white text-sm md:text-lg tracking-[0.1em] mb-12"
             >
               Choose your chapter of luxury.
             </motion.p>
@@ -212,7 +324,7 @@ const Products = () => {
                 delay: 0.15,
                 ease: [0.22, 1, 0.36, 1],
               }}
-              className="font-serif text-4xl md:text-5xl text-royal-purple mb-6"
+              className="font-serif text-3xl md:text-5xl text-royal-purple mb-6"
             >
               Elite Saffron
             </motion.h2>
@@ -231,12 +343,12 @@ const Products = () => {
           <div className="flex flex-wrap items-center justify-between gap-8 mb-10">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="md:hidden flex items-center gap-2 px-4 py-2.5 bg-royal-purple text-ivory text-sm font-medium rounded-full"
+              className="md:hidden flex items-center gap-1.5 px-2 py-1 bg-royal-purple text-ivory text-[10px] uppercase tracking-wider font-bold rounded-full"
             >
               <SlidersHorizontal className="w-4 h-4" />
               Filters
               {activeFiltersCount > 0 && (
-                <span className="ml-1 w-5 h-5 bg-gold  text-royal-purple-dark rounded-full text-xs flex items-center justify-center">
+                <span className="ml-0.5 w-4 h-4 bg-gold text-royal-purple-dark rounded-full text-[9px] flex items-center justify-center">
                   {activeFiltersCount}
                 </span>
               )}
@@ -372,21 +484,22 @@ const Products = () => {
           <p className="text-sm text-royal-purple-dark/50 font-serif text-muted-foreground mb-6">
             {isLoading ? "Loading products..." : `Showing ${filteredProducts.length} product${filteredProducts.length !== 1 ? "s" : ""}`}
           </p>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div ref={productsGridRef} className="flex flex-wrap justify-center gap-12">
             {isLoading ? (
               [...Array(6)].map((_, i) => (
-                <div key={i} className="h-[400px] bg-gray-100 animate-pulse rounded-2xl" />
+                <div key={i} className="w-full md:w-[calc(50%-2rem)] max-w-[550px] h-[500px] bg-gray-100 animate-pulse rounded-3xl" />
               ))
             ) : (
-              filteredProducts.map((product, index) => (
+            filteredProducts.map((product, index) => (
                 <div
                   key={product.id}
-                  className="group relative bg-card rounded-2xl shadow-card overflow-hidden transition-all duration-700 hover:shadow-elegant hover:-translate-y-2"
+                  data-product-index={index}
+                  className="group relative bg-card rounded-3xl shadow-card overflow-hidden transition-all duration-700 hover:shadow-elegant hover:-translate-y-2 w-full md:w-[calc(50%-2rem)] max-w-[550px]"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   {product.tag && (
                     <div className="absolute top-4 left-4 z-10">
-                      <span className="px-3 py-1.5 bg-brand-gold text-royal-purple-dark text-xs font-semibold tracking-wider uppercase rounded-full">
+                      <span className="px-4 py-1 bg-ivory text-royal-purple text-xs font-semibold tracking-wider uppercase rounded-full">
                         {product.tag}
                       </span>
                     </div>
@@ -414,8 +527,11 @@ const Products = () => {
                       <img
                         src={resolveProductImage(product.image)}
                         alt={product.name}
+                        fetchPriority={index < 2 ? "high" : "auto"}
+                        loading={index < 6 ? "eager" : "lazy"}
+                        decoding={index === 0 ? "sync" : "async"}
                         className="
-                          max-h-[70%] object-contain
+                          max-h-[80%] object-contain
                           transition-all duration-700
                           group-hover:scale-105
                           drop-shadow-[0_30px_60px_rgba(0,0,0,0.25)]
@@ -425,22 +541,27 @@ const Products = () => {
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-royal-purple-dark/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     <div
-   className="
-    absolute bottom-4 left-1/2 -translate-x-1/2
-    transition-all duration-500 ease-out
-  "
->
-  <Button
-    variant="white"
-    onClick={() => addToCart(product.id)}
-    className="min-w-[220px] h-[42px]"
-  >
-    <span className="flex items-center gap-3">
-      <ShoppingCart className="w-4 h-4" />
-      Add to Cart
-    </span>
-  </Button>
-</div>
+                      className="
+                        absolute bottom-3 inset-x-0 flex justify-center
+                        sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2
+                      "
+                    >
+                      <Button
+                        variant="white"
+                        onClick={() => addToCart(product.id)}
+                        className="
+                          min-w-[170px] h-[38px] px-5 text-[11px] transition-none
+                          [&>span]:transition-none
+                          sm:min-w-[220px] sm:h-[42px] sm:px-10 sm:text-[12px] sm:transition-all
+                          sm:[&>span]:transition-all
+                        "
+                      >
+                        <span className="flex items-center gap-2 sm:gap-3">
+                          <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          Add to Cart
+                        </span>
+                      </Button>
+                    </div>
 
                   </div>
 
@@ -471,7 +592,7 @@ const Products = () => {
 
 
 
-                    <p className="product-desc  font-medium text-[13px] text-royal-purple-dark/50 tracking-[0.05em]">
+                    <p className="product-desc  font-medium text-[14px] text-royal-purple-dark/50 tracking-[0.05em]">
                       {product.description}
                     </p>
 <br/>
@@ -481,7 +602,7 @@ const Products = () => {
                         ₹{product.price.toLocaleString()}
                       </span>
                       {product.originalPrice && (
-                        <span className="text-sm text-muted-foreground line-through">
+                        <span className="text-md font-bold text-muted-foreground line-through">
                           ₹{product.originalPrice.toLocaleString()}
                         </span>
                       )}

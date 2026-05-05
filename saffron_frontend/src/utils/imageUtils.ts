@@ -1,6 +1,15 @@
 import productJar from "@/assets/product1.png";
 import giftBox from "@/assets/product2.png";
 
+const preloadedImages = new Set<string>();
+const injectedPreloadLinks = new Set<string>();
+
+type ImagePreloadPriority = "high" | "auto" | "low";
+
+type PreloadImageOptions = {
+    priority?: ImagePreloadPriority;
+};
+
 /**
  * Resolves an image path from the database.
  * If the path is a filename that matches our local assets, it returns the imported asset.
@@ -28,4 +37,38 @@ export const resolveProductImage = (imagePath: string): string => {
 
     // Default fallback if nothing matches
     return imagePath || productJar;
+};
+
+const injectPreloadLink = (resolvedPath: string, priority: ImagePreloadPriority): void => {
+    if (typeof document === "undefined" || injectedPreloadLinks.has(resolvedPath)) return;
+
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "image";
+    link.href = resolvedPath;
+    link.setAttribute("fetchpriority", priority);
+    document.head.appendChild(link);
+    injectedPreloadLinks.add(resolvedPath);
+};
+
+export const preloadImage = (imagePath: string, options: PreloadImageOptions = {}): void => {
+    if (typeof window === "undefined") return;
+
+    const resolvedPath = resolveProductImage(imagePath);
+    if (!resolvedPath || preloadedImages.has(resolvedPath)) return;
+
+    const priority = options.priority ?? "auto";
+
+    injectPreloadLink(resolvedPath, priority);
+
+    preloadedImages.add(resolvedPath);
+
+    const image = new Image();
+    image.decoding = priority === "high" ? "sync" : "async";
+    image.setAttribute("fetchpriority", priority);
+    image.src = resolvedPath;
+};
+
+export const preloadImages = (imagePaths: string[], options: PreloadImageOptions = {}): void => {
+    imagePaths.forEach((imagePath) => preloadImage(imagePath, options));
 };

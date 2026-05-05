@@ -261,7 +261,7 @@ const faqCategories = [
       {
         question: "What is your return policy?",
         answer:
-          "Returns are accepted within 7 days for damaged or defective products in original packaging.",
+          "Returns are accepted within 24 hours for damaged or defective products in original packaging.",
       },
     ],
   },
@@ -453,7 +453,7 @@ const CTASection = () => {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
           <motion.a
             ref={emailRef}
-            href="mailto:zprincessaffron07@gmail.com"
+            href="mailto:Crocus@zprincesssaffron.com"
             style={{ x: springEmailX, y: springEmailY }}
             onMouseMove={(e) => handleMouse(e, emailRef, emailX, emailY)}
             onMouseLeave={() => { emailX.set(0); emailY.set(0); }}
@@ -465,7 +465,7 @@ const CTASection = () => {
 
           <motion.a
             ref={waRef}
-            href="https://wa.me/917200150588"
+            href="https://wa.me/917538870577"
             target="_blank"
             rel="noopener noreferrer"
             style={{ x: springWaX, y: springWaY }}

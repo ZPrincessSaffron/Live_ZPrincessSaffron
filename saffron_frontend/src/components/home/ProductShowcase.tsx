@@ -1,35 +1,58 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import productJar from "@/assets/product1.png";
-import giftBox from "@/assets/product2.png";
+import product1 from "@/assets/product1.png";
+import product3 from "@/assets/product3.png";
 import { useEffect, useState } from "react";
-import { resolveProductImage } from "@/utils/imageUtils";
+import { preloadImages, resolveProductImage } from "@/utils/imageUtils";
 import { Star } from "lucide-react";
 
 const products = [
   {
     id: 1,
-    name: "Royal Saffron Threads",
-    price: "₹4,999",
-    image: productJar,
-    tag: "Best Seller",
-    rating: 4.8,
-    reviews: 124,
+    name: "Elite Saffron - 2G",
+    price: "₹1,140",
+    image: product1,
+    tag: "Elite",
+    rating: 4.5,
+    reviews: 50,
     description:
-      "Hand-harvested from the pristine valleys of Kashmir, delivering deep aroma, rich crimson color, and unmatched purity in every strand.",
+      "Our finest saffron, hand-harvested from the pristine valleys of Kashmir for unmatched purity.",
   },
   {
-    id: 2,
-    name: "Premium Gift Collection",
-    price: "₹12,999",
-    image: giftBox,
-    tag: "Gift Set",
-    rating: 4.9,
-    reviews: 89,
+    id: 3,
+    name: "Premium Saffron - 2G",
+    price: "₹5,700",
+    image: product3,
+    tag: "Premium",
+    rating: 5.0,
+    reviews: 45,
     description:
-      "An exquisite presentation of our finest saffron, thoughtfully curated for luxurious gifting and unforgettable impressions.",
+      "Experience the ultimate luxury with our large-format premium saffron collection.",
   },
 ];
+
+const waitForImage = (imagePath: string) =>
+  new Promise<void>((resolve) => {
+    const src = resolveProductImage(imagePath);
+
+    if (!src) {
+      resolve();
+      return;
+    }
+
+    const image = new Image();
+    image.decoding = "async";
+    image.setAttribute("fetchpriority", "high");
+    image.src = src;
+
+    if (image.complete) {
+      resolve();
+      return;
+    }
+
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+  });
 
 const ProductShowcase = () => {
   const [apiProducts, setApiProducts] = useState<any[]>([]);
@@ -37,18 +60,35 @@ const ProductShowcase = () => {
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/products`);
-        const data = await response.json() as any[];
-        setApiProducts(data.slice(0, 2));
-      } catch {
-        // silently fall back to static products
-      } finally {
+    const featuredStaticProducts = products.slice(0, 2);
+    preloadImages(featuredStaticProducts.map((product) => product.image), { priority: "high" });
+
+    let isActive = true;
+
+    const revealProductsWhenReady = async () => {
+      await Promise.all(featuredStaticProducts.map((product) => waitForImage(product.image)));
+
+      if (isActive) {
         setIsLoading(false);
       }
     };
 
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/products`);
+        const data = await response.json() as any[];
+        const filtered = data.filter(p => p.id !== 2 && p.id !== "2");
+        const featuredProducts = filtered.slice(0, 2);
+        preloadImages(featuredProducts.map((product) => product.image), { priority: "high" });
+        if (isActive) {
+          setApiProducts(featuredProducts);
+        }
+      } catch {
+        // silently fall back to static products
+      }
+    };
+
+    revealProductsWhenReady();
     fetchProducts();
 
     const handleScroll = () => {
@@ -56,7 +96,10 @@ const ProductShowcase = () => {
     };
 
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      isActive = false;
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   const displayProducts = apiProducts.length > 0 ? apiProducts : products;
@@ -87,27 +130,27 @@ const ProductShowcase = () => {
 
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-gold to-transparent mx-auto mb-6" />
 
-          <p className="text-muted-foreground leading-relaxed font-rr text-[17px]">
+          <p className="text-muted-foreground leading-relaxed  font-rr text-[16px]">
             Each strand of saffron is a symbol of luxury, purity, and authenticity—sourced directly from the highlands of Kashmir.
           </p>
         </div>
 
         {/* PRODUCTS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-12xl mx-auto mb-20">
+        <div className="flex flex-wrap justify-center gap-12 max-w-12xl mx-auto mb-20">
           {isLoading ? (
             [...Array(2)].map((_, i) => (
-              <div key={i} className="h-[500px] bg-gray-100 animate-pulse" />
+              <div key={i} className="w-full lg:w-[calc(50%-1.5rem)] h-[500px] bg-gray-100 animate-pulse" />
             ))
           ) : (
             displayProducts.map((product, index) => (
               <div
                 key={product.id}
-                className="group relative overflow-hidden bg-card shadow-card transition-all duration-700 hover:shadow-elegant hover:-translate-y-2"
+                className="group relative overflow-hidden bg-card shadow-card transition-all duration-700 hover:shadow-elegant hover:-translate-y-2 w-full lg:w-[calc(50%-1.5rem)]"
                 style={{ animationDelay: `${index * 200}ms` }}
               >
                 {/* TAG */}
                 <div className="absolute top-4 left-4 z-10">
-                  <span className="px-4 py-1.5 bg-brand-gold text-royal-purple-dark text-xs font-semibold tracking-wider uppercase rounded-full">
+                  <span className="px-4 py-1 bg-ivory text-royal-purple text-xs font-semibold tracking-wider uppercase rounded-full">
                     {product.tag}
                   </span>
                 </div>
@@ -122,6 +165,9 @@ const ProductShowcase = () => {
   <img
     src={resolveProductImage(product.image)}
     alt={product.name}
+    fetchPriority="high"
+    loading="eager"
+    decoding="async"
     className="
       relative z-10
       max-h-[80%] w-auto object-contain
@@ -160,12 +206,12 @@ const ProductShowcase = () => {
                   </div>
 
                   {/* TITLE */}
-                  <h3 className="font-cinzel capitalize font-bold uppercase text-royal-purple/80 text-[20px] tracking-[0.09em]">
+                  <h3 className="-mt-1 font-cinzel capitalize font-bold uppercase text-royal-purple/80 text-[20px] tracking-[0.09em]">
                     {product.name}
                   </h3>
 <br/>
                   {/* DESCRIPTION */}
-                  <p className="product-desc  font-medium text-[16px] text-royal-purple-dark/50 tracking-[0.05em]">
+                  <p className="product-desc  font-medium text-[15px] text-royal-purple-dark/50 tracking-[0.05em]">
                     {product.description}
                   </p>
 

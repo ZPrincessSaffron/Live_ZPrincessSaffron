@@ -160,7 +160,7 @@ export const sendStatusUpdateNotification = async (user, order, status) => {
     if (emailTo) {
       // Map internal statuses to user-friendly email statuses
       let emailStatus = status.toUpperCase();
-      if (emailStatus === "CONFIRMED") emailStatus = "ORDERED";
+      // Use original status to match emailTemplates.js
 
       sendOrderEmail(emailTo, readableOrderId, emailStatus, user.fullName || "Customer")
         .catch(err => console.error("❌ Email notification failed:", err.message));

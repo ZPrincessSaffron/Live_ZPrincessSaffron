@@ -87,7 +87,7 @@ const JourneySection = () => {
     <section ref={containerRef} className="relative">
 
       {/* Sticky Header */}
-      <div className="sticky top-0 h-screen flex items-center justify-center bg-gradient-hero z-10 isolate">
+      <div className="sticky top-0 h-[100svh] flex items-center justify-center bg-gradient-hero z-10 isolate">
         <motion.div
           initial={{ opacity: 0, y: 60 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -116,7 +116,7 @@ const JourneySection = () => {
         return (
           <section
             key={step.step}
-            className={`sticky top-0 h-screen w-full flex items-center bg-gradient-to-b ${bgGradients[index]} overflow-hidden`}
+            className={`sticky top-0 h-[100svh] w-full flex items-center bg-gradient-to-b ${bgGradients[index]} overflow-hidden`}
             style={{ zIndex: 20 + index }}
           >
             {/* overlay */}
@@ -177,6 +177,8 @@ const JourneySection = () => {
                       <img
                         src={step.image}
                         alt={step.title}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover"
                       />
                     </motion.div>

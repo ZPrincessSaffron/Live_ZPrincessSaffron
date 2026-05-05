@@ -12,6 +12,8 @@ export interface OrderItem {
   product_image: string | null;
   quantity: number;
   price: number;
+  isReturned?: boolean;
+  returnRequestedAt?: string;
 }
 
 export interface Order {
@@ -28,6 +30,7 @@ export interface Order {
   razorpayOrderId?: string;
   estimatedDelivery?: string;
   trackingNumber?: string;
+  deliveredAt?: string;
   createdAt: string;
 }
 
@@ -63,7 +66,7 @@ export const useOrders = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchOrders = useCallback(async () => {
     if (!user || !user.token) {
@@ -73,12 +76,14 @@ export const useOrders = () => {
 
     setIsLoading(true);
     try {
+      console.log("Fetching orders for user:", user?.email);
       const response = await fetch(`${API_URL}/users/orders`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
       });
       const data = await response.json();
+      console.log("Orders fetch response:", response.status, data);
       if (response.ok) {
         setOrders(data || []);
       }
@@ -88,7 +93,7 @@ export const useOrders = () => {
     setIsLoading(false);
   }, [user]);
 
-  const fetchOrderWithItems = async (orderId: string): Promise<Order | null> => {
+  const fetchOrderWithItems = useCallback(async (orderId: string): Promise<Order | null> => {
     if (!user || !user.token) return null;
 
     try {
@@ -106,7 +111,7 @@ export const useOrders = () => {
       console.error("Error fetching order:", error);
       return null;
     }
-  };
+  }, [user]);
 
   const createOrder = async (checkoutData: CheckoutData): Promise<string | null> => {
     if (!user || !user.token) {
@@ -186,6 +191,59 @@ export const useOrders = () => {
     }
   };
 
+  const submitReturnRequest = async (data: any): Promise<boolean> => {
+    if (!user || !user.token) return false;
+
+    try {
+      const response = await fetch(`${API_URL}/returns`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to submit return request");
+      }
+
+      toast({
+        title: "Success",
+        description: "Return request submitted successfully",
+      });
+
+      return true;
+    } catch (error: any) {
+      console.error("Error submitting return:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit return request",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const fetchMyReturns = useCallback(async (): Promise<any[]> => {
+    if (!user || !user.token) return [];
+
+    try {
+      const response = await fetch(`${API_URL}/returns/my`, {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch returns");
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching returns:", error);
+      return [];
+    }
+  }, [user]);
+
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
@@ -197,5 +255,7 @@ export const useOrders = () => {
     fetchOrderWithItems,
     createOrder,
     cancelOrder,
+    submitReturnRequest,
+    fetchMyReturns,
   };
 };

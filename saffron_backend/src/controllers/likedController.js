@@ -3,22 +3,23 @@ import Product from "../models/productModel.js";
 
 export const getLikedProducts = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
+        console.time("[DB] getLikedProducts");
+        const user = await User.findById(req.user._id).select("likedProducts").lean();
 
         if (user) {
-            const enrichedLikedProducts = [];
-            for (const productId of user.likedProducts) {
-                const product = await Product.findOne({ id: productId });
-                if (product) {
-                    enrichedLikedProducts.push({
-                        product_id: productId,
-                        product: product
-                    });
-                } else {
-                    // Fallback for cases where product might be deleted
-                    enrichedLikedProducts.push({ product_id: productId });
-                }
-            }
+            // Use $in to fetch all products in a single query
+            const products = await Product.find({ id: { $in: user.likedProducts } }).lean();
+            
+            // Map back to the expected format
+            const enrichedLikedProducts = user.likedProducts.map(productId => {
+                const product = products.find(p => p.id === productId);
+                return {
+                    product_id: productId,
+                    product: product || null
+                };
+            });
+
+            console.timeEnd("[DB] getLikedProducts");
             res.json(enrichedLikedProducts);
         } else {
             res.status(404).json({ message: "User not found" });

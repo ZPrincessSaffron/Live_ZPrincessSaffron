@@ -80,15 +80,17 @@ const Footer = () => {
       >
 
         {/* GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-10 md:gap-x-8">
 
           {/* BRAND */}
-          <div className="lg:col-span-2">
-            <Link to="/" className="inline-block mb-6 group">
+          <div className="md:col-span-4 lg:col-span-2 lg:pl-8">
+            <Link to="/products" className="inline-block mb-6 group">
               <img
                 src={logo}
                 alt="Z Princess Saffron"
-                className="h-16 w-auto brightness-0 invert opacity-90 group-hover:opacity-100 transition-all duration-300"
+                loading="lazy"
+                decoding="async"
+                className="h-12 w-auto group-hover:opacity-100 transition-all duration-300"
               />
             </Link>
 
@@ -96,15 +98,15 @@ const Footer = () => {
               Z Princess Saffron <br /> Royal Spice, Timeless Grace
             </p>
 
-            <div className="space-y-3 text-sm tracking-[0.15em] ">
+            <div className="space-y-3 text-sm tracking-[0.15em]">
               <a href="tel:+917200150588" className="flex items-center gap-3  text-ivory/70 hover:text-gold transition-colors">
                 <Phone className="w-4 h-4 text-gold" />
-                +91 72001 50588
+                +91 75388 70577
               </a>
 
-              <a href="mailto:zprincessaffron07@gmail.com" className="flex items-center gap-3 text-ivory/70 hover:text-gold transition-colors">
+              <a href="mailto:Crocus@zprincesssaffron.com" className="flex items-center gap-3 text-ivory/70 hover:text-gold transition-colors">
                 <Mail className="w-4 h-4 text-gold" />
-                zprincessaffron07@gmail.com
+                Crocus@zprincesssaffron.com
               </a>
 
               <div className="flex items-start font-rr gap-3 text-ivory/70">
@@ -116,7 +118,7 @@ const Footer = () => {
 
           {/* LINK GROUPS */}
           {Object.entries(footerLinks).map(([title, links]) => (
-            <div key={title}>
+            <div key={title} className="min-w-0">
               <h4 className="text-xs font-medium uppercase tracking-[0.35em] text-ivory mb-6">
                 {title}
               </h4>
@@ -145,10 +147,10 @@ const Footer = () => {
         </div>
 
         {/* BOTTOM */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex flex-col items-center gap-6 md:items-start lg:flex-row lg:items-center lg:justify-between">
 
           {/* PAYMENTS */}
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4 lg:pl-8">
             <span className="text-ivory/50 text-xs uppercase tracking-[0.35em]">
               Secure Payments:
             </span>
@@ -160,7 +162,13 @@ const Footer = () => {
                   whileHover={{ y: -2, scale: 1.03 }}
                   className="flex items-center gap-2 px-3 py-2 bg-ivory/10 rounded-md hover:bg-ivory/20 transition-all duration-300 shadow-sm hover:shadow-gold-glow"
                 >
-                  <img src={method.logo} alt={method.name} className="h-4 sm:h-5 w-auto" />
+                  <img
+                    src={method.logo}
+                    alt={method.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-4 sm:h-5 w-auto"
+                  />
                   <span className="text-xs text-ivory/70 tracking-[0.15em]">
                     {method.name}
                   </span>
@@ -170,7 +178,7 @@ const Footer = () => {
           </div>
 
           {/* SOCIAL */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 md:self-start lg:self-auto">
             {socialLinks.map((social, i) => (
               <motion.a
                 key={social.label}
@@ -183,7 +191,7 @@ const Footer = () => {
                 }}
                 className="w-10 h-10 rounded-full border border-ivory/20 flex items-center justify-center text-ivory/70 hover:border-gold hover:text-gold hover:bg-gold/10 transition-all duration-300"
               >
-                <social.icon className="w-4 h-4" />
+                <social.icon className="w-4 h-4 -ml-px" />
               </motion.a>
             ))}
           </div>

@@ -65,14 +65,16 @@ const ProfileLayout = ({ children, title, description, className, hideHeaderMobi
           {/* Header row with menu button */}
           <div className="flex items-center justify-between mb-6">
 
-            <div className={cn(hideHeaderMobile && "hidden md:block")}>
+            <div className={cn("max-w-xl", hideHeaderMobile && "hidden md:block")}>
               {title && (
-                <h1 className="font-serif text-3xl text-royal-purple">
+                <h1 className="font-serif text-xl sm:text-2xl md:text-3xl text-royal-purple uppercase tracking-tight md:tracking-normal leading-tight">
                   {title}
                 </h1>
               )}
               {description && (
-                <p className="text-muted-foreground mt-1 font-rr">{description}</p>
+                <p className="text-[11px] sm:text-xs md:text-sm text-muted-foreground mt-2 font-rr leading-relaxed max-w-lg">
+                  {description}
+                </p>
               )}
             </div>
 
@@ -187,7 +189,7 @@ const ProfileLayout = ({ children, title, description, className, hideHeaderMobi
                   initial={{ opacity: 0, x: -40 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                  className="font-serif text-2xl tracking-[0.25em] text-ivory"
+                  className="font-serif text-xl tracking-[0.25em] text-ivory"
                 >
                   My Account
                 </motion.h2>

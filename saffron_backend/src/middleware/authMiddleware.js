@@ -12,8 +12,7 @@ export const protect = async (req, res, next) => {
             token = req.headers.authorization.split(" ")[1];
 
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-            req.user = await User.findById(decoded.id).select("-password");
+            req.user = await User.findById(decoded.id).select("_id fullName isAdmin role").lean();
 
             return next();
         } catch (error) {
@@ -38,7 +37,7 @@ export const optionalProtect = async (req, res, next) => {
         try {
             token = req.headers.authorization.split(" ")[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = await User.findById(decoded.id).select("-password");
+            req.user = await User.findById(decoded.id).select("_id fullName isAdmin role").lean();
             return next();
         } catch (error) {
             console.error("Optional Auth Error:", error);
@@ -54,7 +53,9 @@ export const admin = (req, res, next) => {
         return next();
     } else {
         res.status(403);
-        throw new Error("Access denied: Admin credentials required.");
+        const error = new Error("Access denied: Admin credentials required.");
+        error.status = 403;
+        throw error;
     }
 };
 

@@ -20,7 +20,7 @@ import {
 } from "framer-motion";
 import { useRef, useState } from "react";
 
-const ease   = cubicBezier(0.22, 1, 0.36, 1);
+const ease = cubicBezier(0.22, 1, 0.36, 1);
 const snappy = cubicBezier(0.34, 1.56, 0.64, 1);
 
 /* ── Scroll Progress Bar ─────────────────────────── */
@@ -68,7 +68,7 @@ const MagneticLink = ({ href, children }: MagneticLinkProps) => {
         if (!ref.current) return;
         const r = ref.current.getBoundingClientRect();
         x.set((e.clientX - r.left - r.width / 2) * 0.35);
-        y.set((e.clientY - r.top  - r.height / 2) * 0.35);
+        y.set((e.clientY - r.top - r.height / 2) * 0.35);
       }}
       onMouseLeave={() => { x.set(0); y.set(0); }}
       whileTap={{ scale: 0.96 }}
@@ -119,9 +119,9 @@ const GlowCard = ({ children, className = "" }: GlowCardProps) => {
 const ParallaxHero = () => {
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const y       = useTransform(scrollYProgress, [0, 1], [0, 72]);
+  const y = useTransform(scrollYProgress, [0, 1], [0, 72]);
   const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
-  const scale   = useTransform(scrollYProgress, [0, 1], [1, 0.94]);
+  const scale = useTransform(scrollYProgress, [0, 1], [1, 0.94]);
 
   return (
     <section ref={ref} className="relative w-full bg-royal-purple-dark text-ivory overflow-hidden pt-24 md:pt-32 pb-12 md:pb-16 min-h-[250px] md:min-h-[320px] flex flex-col items-center text-center">
@@ -383,11 +383,11 @@ const ContactSection = () => (
           transition={{ delay: 0.35, duration: 0.6 }}
           className="flex flex-col sm:flex-row justify-center text-[13px] gap-6"
         >
-          <MagneticLink href="mailto:zprincessaffron07@gmail.com">
-            zprincessaffron07@gmail.com
+          <MagneticLink href="mailto:Crocus@zprincesssaffron.com">
+            Crocus@zprincesssaffron.com
           </MagneticLink>
-          <MagneticLink href="tel:+917200150588">
-            +91 72001 50588
+          <MagneticLink href="tel:+917538870577">
+            +91 75388 70577
           </MagneticLink>
         </motion.div>
       </motion.div>
@@ -410,7 +410,7 @@ const sections = [
     icon: <CreditCard />,
     title: "Payment Terms",
     items: [
-      { subtitle: "Accepted Payments", content: "We accept Credit/Debit Cards, UPI, Net Banking, and COD for eligible orders." },
+      { subtitle: "Accepted Payments", content: "We accept Credit/Debit Cards, UPI, Net Banking." },
       { subtitle: "Security", content: "All payments are processed through encrypted gateways. We do not store card details." },
     ],
   },
@@ -418,8 +418,8 @@ const sections = [
     icon: <Truck />,
     title: "Shipping & Delivery",
     items: [
-      { subtitle: "Delivery Timeline", content: "Standard delivery takes 5–7 business days within India." },
-      { subtitle: "Shipping Charges", content: "Free shipping on orders above ₹999." },
+      { subtitle: "Delivery Timeline", content: "Standard delivery takes 3 - 5 business days within India." },
+      { subtitle: "Shipping Charges", content: "Free shipping on orders above ₹999 all over South India. For other places free shipping on orders above ₹2999" },
     ],
   },
   {

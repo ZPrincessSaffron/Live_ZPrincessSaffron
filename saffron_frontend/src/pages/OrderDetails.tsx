@@ -1,22 +1,32 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Package, Truck, CheckCircle, Clock, XCircle, MapPin, Phone, Mail } from "lucide-react";
+import { ArrowLeft, Package, Truck, CheckCircle, Clock, XCircle, MapPin, Phone, Mail, Loader2 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrders, Order, OrderStatus } from "@/hooks/useOrders";
+import { Button } from "@/components/ui/button";
+import ReturnRequestModal from "@/components/orders/ReturnRequestModal";
 
-const statusSteps: { status: OrderStatus; label: string; icon: React.ElementType }[] = [
+const statusSteps: { status: string; label: string; icon: React.ElementType }[] = [
   { status: "pending", label: "Order Placed", icon: Clock },
   { status: "confirmed", label: "Confirmed", icon: CheckCircle },
   { status: "processing", label: "Processing", icon: Package },
   { status: "shipped", label: "Shipped", icon: Truck },
   { status: "out_for_delivery", label: "Out for Delivery", icon: Truck },
   { status: "delivered", label: "Delivered", icon: CheckCircle },
+  { status: "requested", label: "Return Requested", icon: Clock },
+  { status: "approved", label: "Return Approved", icon: CheckCircle },
+  { status: "refunded", label: "Refunded", icon: CheckCircle },
 ];
 
-const getStatusIndex = (status: OrderStatus): number => {
+const getStatusIndex = (status: string, overallReturnStatus?: string | null): number => {
   if (status === "cancelled") return -1;
-  // Map "paid" to "confirmed" for backward compatibility or if backend still uses it
+  
+  // If order is delivered, we might be in the return phase
+  if (status === "delivered" && overallReturnStatus) {
+    return statusSteps.findIndex((step) => step.status === overallReturnStatus);
+  }
+
   const effectiveStatus = status === "paid" ? "confirmed" : status;
   return statusSteps.findIndex((step) => step.status === effectiveStatus);
 };
@@ -24,21 +34,34 @@ const getStatusIndex = (status: OrderStatus): number => {
 const OrderDetails = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const { user } = useAuth();
-  const { fetchOrderWithItems, cancelOrder } = useOrders();
+  const { fetchOrderWithItems, cancelOrder, submitReturnRequest, fetchMyReturns } = useOrders();
   const [order, setOrder] = useState<Order | null>(null);
+  const [returns, setReturns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
 
   useEffect(() => {
-    const loadOrder = async () => {
-      if (orderId) {
-        const data = await fetchOrderWithItems(orderId);
-        setOrder(data);
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        if (orderId) {
+          const [orderData, returnsData] = await Promise.all([
+            fetchOrderWithItems(orderId),
+            fetchMyReturns(),
+          ]);
+          setOrder(orderData);
+          setReturns(returnsData);
+        }
+      } catch (error) {
+        console.error("Error loading order details:", error);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
-    loadOrder();
-  }, [orderId, fetchOrderWithItems]);
+    loadData();
+  }, [orderId, fetchOrderWithItems, fetchMyReturns]);
 
   const handleCancel = async () => {
     if (!order || isCancelling) return;
@@ -49,6 +72,48 @@ const OrderDetails = () => {
     }
     setIsCancelling(false);
   };
+
+  const handleReturnSubmit = async (data: any) => {
+    const success = await submitReturnRequest(data);
+    if (success) {
+      const returnsData = await fetchMyReturns();
+      setReturns(returnsData);
+    }
+    return success;
+  };
+
+  const getReturnStatusColor = (status: string) => {
+    if (status === "requested") return "#f59e0b"; // Orange/Amber
+    if (status === "approved") return "#10b981";  // Green
+    if (status === "rejected") return "#ef4444";  // Red
+    if (status === "refunded") return "#C6A85A";  // Gold
+    return "#6b7280";                             // Gray
+  };
+
+  const getReturnStatus = (productId: number) => {
+    const allReturns = [...returns, ...(order?.returnRequests || [])];
+    const request = allReturns.find(r => r.orderId === order?.orderId && r.items?.some((i: any) => Number(i.productId) === productId));
+    return request?.status;
+  };
+
+  const getOverallReturnStatus = () => {
+    // Combine state returns and backend-attached returns
+    const allReturns = [...(returns || []), ...(order?.returnRequests || [])];
+    
+    // Filter out any invalid or empty objects
+    const validReturns = allReturns.filter(r => r && r.status && r.orderId === order?.orderId);
+    
+    if (validReturns.length === 0) return null;
+    
+    // Priority: refunded > approved > requested
+    if (validReturns.some(r => r.status === "refunded")) return "refunded";
+    if (validReturns.some(r => r.status === "approved")) return "approved";
+    if (validReturns.some(r => r.status === "requested")) return "requested";
+    return null;
+  };
+
+  const overallReturnStatus = getOverallReturnStatus();
+  const currentStep = order ? getStatusIndex(order.status, overallReturnStatus) : -1;
 
   if (!user) {
     return (
@@ -101,9 +166,9 @@ const OrderDetails = () => {
     );
   }
 
-  const currentStepIndex = getStatusIndex(order.status);
   const isCancelled = order.status === "cancelled";
-  const canCancel = order.status !== "cancelled" && order.status !== "delivered";
+  // Restrict cancellation to before processing starts
+  const canCancel = ["pending", "confirmed"].includes(order.status);
 
   return (
     <Layout>
@@ -124,19 +189,20 @@ const OrderDetails = () => {
     BACK TO ORDERS
   </span>
 </Link>
-          {canCancel && (
+          {!isCancelled && order.status !== "delivered" && (
             <button
               onClick={handleCancel}
-              disabled={isCancelling}
+              disabled={isCancelling || !canCancel}
               className="group absolute top-0 right-6 px-6 py-2 
                          border border-red-500 text-red-500 
                          font-medium text-sm uppercase tracking-widest 
                          rounded-full
                          transition-all duration-300
-                         hover:bg-red-500 hover:text-white
-                         hover:shadow-lg hover:-translate-y-1
-                         active:scale-95
-                         disabled:opacity-50 disabled:cursor-not-allowed"
+                         hover:enabled:bg-red-500 hover:enabled:text-white
+                         hover:enabled:shadow-lg hover:enabled:-translate-y-1
+                         active:enabled:scale-95
+                         disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed
+                         disabled:border-gray-400 disabled:text-gray-400"
             >
               {isCancelling ? "Cancelling..." : "Cancel Order"}
             </button>
@@ -175,16 +241,21 @@ const OrderDetails = () => {
                   <div className="relative">
                     <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border"></div>
                     <div className="space-y-6">
-                      {statusSteps.map((step, index) => {
+                      {statusSteps
+                        .filter((step, index) => {
+                          if (index <= 5) return true;
+                          return !!overallReturnStatus;
+                        })
+                        .map((step, index) => {
                         const Icon = step.icon;
-                        const isCompleted = index <= currentStepIndex;
-                        const isCurrent = index === currentStepIndex;
+                        const isCompleted = index <= currentStep;
+                        const isCurrent = index === currentStep;
 
                         return (
                           <div key={step.status} className="relative flex items-center gap-4">
                             <div
                               className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center ${isCompleted
-                                ? "bg-[#C6A85A] text-royal-purple-dark"
+                                ? "bg-[#C6A85A] text-royal-purple-dark shadow-md shadow-[#C6A85A]/20"
                                 : "bg-muted text-muted-foreground"
                                 } ${isCurrent ? "ring-2 ring-[#C6A85A] ring-offset-2" : ""}`}
                             >
@@ -197,8 +268,13 @@ const OrderDetails = () => {
                               >
                                 {step.label}
                               </p>
+                              {isCurrent && (
+                                <p className="text-xs text-[#C6A85A] font-bold uppercase tracking-widest mt-0.5">
+                                  Current Stage
+                                </p>
+                              )}
                               {isCurrent && step.status === "shipped" && order.trackingNumber && (
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-sm text-muted-foreground mt-1">
                                   Tracking: {order.trackingNumber}
                                 </p>
                               )}
@@ -215,11 +291,14 @@ const OrderDetails = () => {
                     <p className="text-sm">
                       <span className="text-muted-foreground">Estimated Delivery: </span>
                       <span className="font-medium">
-                        {new Date(order.estimatedDelivery).toLocaleDateString("en-IN", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
+                        {(() => {
+                          const date = new Date(order.estimatedDelivery);
+                          return isNaN(date.getTime()) ? "TBD" : date.toLocaleDateString("en-IN", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          });
+                        })()}
                       </span>
                     </p>
                   </div>
@@ -228,7 +307,36 @@ const OrderDetails = () => {
 
               {/* Order Items */}
               <div className="bg-card p-6 rounded-2xl shadow-card">
-                <h2 className="font-serif text-xl text-royal-purple mb-6">Order Items</h2>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <h2 className="font-serif text-xl text-royal-purple">Order Items</h2>
+                  
+                  {order.status?.toLowerCase() === "delivered" && (
+                    (() => {
+                      // Consolidate all return data sources
+                      const allReturns = [...(returns || []), ...(order?.returnRequests || [])];
+                      const returnedProductIds = allReturns
+                        .filter(r => r.orderId === order?.orderId)
+                        .flatMap(r => (r.items || []).map((i: any) => Number(i.productId)));
+                        
+                      const returnableItems = (order.items || []).filter((item: any) => !returnedProductIds.includes(Number(item.product_id)));
+                      
+                      // For debugging, we'll show the button if there are returnable items
+                      if (returnableItems.length > 0) {
+                        return (
+                          <Button
+                            variant="royal"
+                            onClick={() => setIsReturnModalOpen(true)}
+                            className="h-[40px] min-w-[180px] bg-royal-purple hover:bg-royal-purple/90 text-[11px] text-white rounded-full px-5 transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                          >
+                            Return Items
+                          </Button>
+                        );
+                      }
+                      return null;
+                    })()
+                  )}
+                </div>
+
                 <div className="space-y-4">
                   {order.items?.map((item, index) => (
                     <div key={index} className="flex gap-4 pb-4 border-b border-border last:border-0 last:pb-0">
@@ -236,15 +344,39 @@ const OrderDetails = () => {
                         <img
                           src={item.product_image}
                           alt={item.product_name}
+                          loading="lazy"
+                          decoding="async"
                           className="w-20 h-20 object-cover rounded-lg"
                         />
                       )}
                       <div className="flex-1">
-                        <p className="font-medium font-rr">{item.product_name}</p>
-                        <p className="text-sm text-muted-foreground font-rr">Quantity: {item.quantity}</p>
-                        <p className="text-[#C6A85A] font-medium">
-                          ₹{(item.price * item.quantity).toLocaleString()}
-                        </p>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div>
+                            <p className="font-medium font-rr">{item.product_name}</p>
+                            <p className="text-sm text-muted-foreground font-rr">Quantity: {item.quantity}</p>
+                            <p className="text-[#C6A85A] font-medium">
+                              ₹{(item.price * item.quantity).toLocaleString()}
+                            </p>
+                          </div>
+                          {order.status === "delivered" && (
+                            <div className="mt-2 sm:mt-0">
+                              {(() => {
+                                  const status = getReturnStatus(item.product_id);
+                                  if (status) {
+                                    return (
+                                      <span 
+                                        className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-white/50 border"
+                                        style={{ color: getReturnStatusColor(status), borderColor: `${getReturnStatusColor(status)}20` }}
+                                      >
+                                        Return {status}
+                                      </span>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -311,6 +443,20 @@ const OrderDetails = () => {
           </div>
         </div>
       </section>
+      {/* Return Modal */}
+      {order && (
+        <ReturnRequestModal
+          isOpen={isReturnModalOpen}
+          onClose={() => {
+            setIsReturnModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          order={order}
+          initialProduct={selectedProduct}
+          onSubmit={handleReturnSubmit}
+          existingReturns={returns}
+        />
+      )}
     </Layout>
   );
 };

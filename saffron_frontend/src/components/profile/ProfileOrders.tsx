@@ -125,7 +125,7 @@ const ProfileOrders = ({ orders, isLoading }: ProfileOrdersProps) => {
       `}</style>
       
       {/* CENTERED HEADING */}
-      <h2 className="text-center md:text-left font-serif text-xl sm:text-2xl md:text-3xl lg:text-center tracking-[0.25em] text-royal-purple mb-10">
+      <h2 className="text-center font-serif text-xl sm:text-2xl md:text-3xl tracking-[0.25em] text-royal-purple mb-10">
         My Orders
       </h2>
 

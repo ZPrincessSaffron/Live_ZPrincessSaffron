@@ -18,6 +18,8 @@ const FounderCulture: React.FC = () => {
         <motion.img
           src={ankletImg}
           alt=""
+          loading="lazy"
+          decoding="async"
           style={{ y: y1 }}
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 0.23 }}
@@ -33,6 +35,8 @@ const FounderCulture: React.FC = () => {
         <motion.img
           src={jallikattuImg}
           alt=""
+          loading="lazy"
+          decoding="async"
           style={{ y: y2 }}
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 0.19 }}
@@ -78,7 +82,7 @@ const FounderCulture: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 1 }}
           style={{ wordSpacing: "6px" }}
-          className="text-center mt-5 text-sm md:text-base lg:text-xl font-[600] tracking-[0.1em] font-medium leading-relaxed px-4 sm:px-6 md:px-8 lg:px-0"
+          className="text-center mt-5 text-[clamp(12px,4vw,20px)] tracking-[0.1em] font-medium leading-[1.6] md:leading-relaxed px-4 sm:px-6 md:px-8 lg:px-0"
         >
           <span className="text-royal-purple/60">The founder is deeply connected to<br /> </span>
           <span className="text-royal-purple/60 ">cultural roots</span><br />

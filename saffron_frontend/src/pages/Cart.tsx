@@ -189,22 +189,24 @@ const Cart = () => {
               {cartProducts.map(({ product_id, quantity, product }) => (
                 <div
                   key={product_id}
-                  className="flex flex-col items-center text-center lg:flex-row lg:items-start lg:text-left gap-6 bg-card p-6 rounded-2xl shadow-card"
+                  className="flex flex-row items-start text-left gap-3 md:gap-6 bg-card p-4 md:p-6 rounded-2xl shadow-card"
                 >
                   <img
                     src={resolveProductImage(product!.image)}
                     alt={product!.name}
-                    className="w-32 h-32 lg:w-28 lg:h-28 object-contain lg:object-cover mx-auto lg:mx-0 rounded-2xl mb-2 lg:mb-0"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-20 h-20 md:w-28 md:h-28 object-contain rounded-2xl flex-shrink-0"
                   />
                   <div className="flex-1 w-full">
-                    <h3 className="font-cinzel text-royal-purple/80 uppercase font-bold text-[16px] tracking-[0.09em] mb-1">
+                    <h3 className="font-cinzel text-royal-purple/80 uppercase font-bold text-[14px] md:text-[16px] tracking-[0.09em] mb-1">
                       {product!.name}
                     </h3>
-                    <p className="product-desc font-medium text-[13px] text-royal-purple-dark/50 tracking-[0.05em] mb-4">
+                    <p className="product-desc font-medium text-[11px] md:text-[13px] text-royal-purple-dark/50 tracking-[0.05em] mb-3">
                       {product!.description}
                     </p>
-                    <div className="flex flex-col items-center justify-center lg:flex-row lg:justify-between gap-4 w-full">
-                      <div className="flex items-center justify-center lg:justify-start gap-3">
+                    <div className="flex flex-row items-center justify-between gap-4 w-full">
+                      <div className="flex items-center justify-start gap-2 md:gap-3">
                         <button
                           onClick={() => updateQuantity(product_id, quantity - 1)}
                           className="w-8 h-8 flex items-center justify-center border border-border rounded-full hover:border-gold transition-colors"
@@ -219,15 +221,15 @@ const Cart = () => {
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
-                      <div className="flex items-center justify-center lg:justify-start gap-6">
-                        <span className="font-outfit text-lg font-bold text-brand-gold">
+                      <div className="flex items-center justify-start gap-4 md:gap-6">
+                        <span className="font-outfit text-base md:text-lg font-bold text-brand-gold">
                           ₹{(product!.price * quantity).toLocaleString()}
                         </span>
                         <button
                           onClick={() => removeFromCart(product_id)}
                           className="text-muted-foreground hover:text-red-500 transition-colors"
                         >
-                          <Trash2 className="w-5 h-5" />
+                          <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
                         </button>
                       </div>
                     </div>
@@ -245,8 +247,8 @@ const Cart = () => {
 
             {/* Order Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-card p-6 rounded-2xl shadow-card sticky top-28 items-center text-center lg:items-start lg:text-left">
-                <h2 className="font-cinzel text-royal-purple/80 uppercase font-bold text-[18px] tracking-[0.1em] mb-6">Order Summary</h2>
+              <div className="bg-card p-6 rounded-2xl shadow-card sticky top-28 items-start text-left">
+                <h2 className="font-cinzel text-royal-purple/80 uppercase font-bold text-[16px] md:text-[18px] tracking-[0.1em] mb-6">Order Summary</h2>
 
                 {/* Coupon */}
                 <div className="mb-6">

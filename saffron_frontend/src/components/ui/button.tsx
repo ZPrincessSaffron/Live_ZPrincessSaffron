@@ -10,6 +10,7 @@ const buttonVariants = cva(
       variant: {
         default: "",
         royal: "", // NEW VARIANT
+        royalOutline: "",
         section: "",
         white: "",
         google:"",
@@ -40,7 +41,7 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
-  variant?: "default" | "royal" | "section" | "white" | "google" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+  variant?: "default" | "royal" | "royalOutline" | "section" | "white" | "google" | "destructive" | "outline" | "secondary" | "ghost" | "link"
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -370,6 +371,74 @@ if (variant === "white" && !asChild) {
           </svg>
 
           {/* No Arrow Here */}
+          <span className="relative z-10 transition-transform duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover:-translate-y-1">
+            {children}
+          </span>
+
+          <style>
+            {`
+              @keyframes runBorder {
+                from { stroke-dashoffset: 760; }
+                to { stroke-dashoffset: 0; }
+              }
+              .group:hover .border-run {
+                animation: runBorder 1.1s ease forwards;
+              }
+              .group:not(:hover) .border-run {
+                stroke-dashoffset: 760;
+              }
+            `}
+          </style>
+        </button>
+      )
+    }
+
+    /* ================= ROYAL OUTLINE BUTTON ================= */
+    if (variant === "royalOutline" && !asChild) {
+      return (
+        <button
+          ref={ref}
+          {...props}
+          className={cn(
+            `
+            relative inline-flex items-center justify-center
+            rounded-full
+            bg-transparent
+            text-[#2E0F3A]
+            h-[44px] min-w-[210px] px-10
+            font-sans text-[12px] font-semibold
+            tracking-[0.22em] uppercase
+            border border-[#2E0F3A]
+            outline-none focus:ring-0
+            overflow-visible
+            transition-all duration-500 ease-[cubic-bezier(.22,1,.36,1)]
+            group
+            hover:shadow-[0_12px_35px_rgba(46,15,58,0.18)]
+            `,
+            className
+          )}
+        >
+          <svg
+            className="absolute -inset-[1px] w-[calc(100%+2px)] h-[calc(100%+2px)] pointer-events-none"
+            viewBox="0 0 302 46"
+            preserveAspectRatio="none"
+          >
+            <rect
+              x="1"
+              y="1"
+              width="300"
+              height="44"
+              rx="23"
+              ry="23"
+              fill="none"
+              stroke="#2E0F3A"
+              strokeWidth="1.2"
+              strokeDasharray="760"
+              strokeDashoffset="760"
+              className="border-run"
+            />
+          </svg>
+
           <span className="relative z-10 transition-transform duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover:-translate-y-1">
             {children}
           </span>

@@ -102,18 +102,23 @@ const AboutStory = () => {
               className="w-24 h-px bg-gradient-to-r from-transparent via-gold/60 to-transparent mx-auto origin-center"
             />
 
-            <motion.p
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1 }}
-              viewport={{ margin: "-100px" }}
-              className="text-center font-sans text-sm  font-medium uppercase tracking-[0.35em] text-gold"
-            >
-              Restraint. Patience. Purity.
-            </motion.p>
+
 
           </div>
         </div>
+      </div>
+
+      {/* ================= RESTRAINT SENTENCE (BOTTOM CENTER) ================= */}
+      <div className="absolute bottom-5 left-0 right-0 z-20 pointer-events-none">
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.3 }}
+          viewport={{ once: true }}
+          className="text-center font-sans text-[10px] md:text-sm font-medium uppercase tracking-[0.35em] text-gold"
+        >
+          Restraint. Patience. Purity.
+        </motion.p>
       </div>
 
     </section>
