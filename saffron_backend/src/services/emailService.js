@@ -15,6 +15,16 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Verify connection configuration on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("❌ Email Transporter Error:", error.message);
+  } else {
+    console.log("✅ Email Transporter is ready to send messages");
+  }
+});
+
+
 /**
  * Send an email notification for an order status update.
  * This is non-blocking and will log errors without crashing the main flow.
@@ -96,7 +106,7 @@ export const sendOTPEmail = async (to, otp, fullName) => {
     console.log(`✅ OTP email sent successfully to ${to}. Message ID: ${info.messageId}`);
     return info;
   } catch (error) {
-    console.error("❌ OTP email failed:", error);
+    console.error("❌ OTP email failed. Full Error:", error);
     return null;
   }
 };
