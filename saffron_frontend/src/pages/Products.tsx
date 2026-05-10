@@ -218,7 +218,6 @@ const Products = () => {
     setRatingFilter("all");
     setTypeFilter("all");
   };
-  
 
   return (
     <Layout>
@@ -300,17 +299,15 @@ const Products = () => {
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-ivory/10 via-ivory/10 to-transparent" />
       </section>
+
       <section className="py-16 bg-ivory">
-        <div className="container mx-auto px-4 md:px-6 lg:px-0">
+        <div className="container mx-auto px-4 md:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <motion.p
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ amount: 0.6 }}
-              transition={{
-                duration: 0.9,
-                ease: [0.22, 1, 0.36, 1],
-              }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
               className="font-sans font-medium text-gold text-sm tracking-[0.35em] uppercase mb-4"
             >
               Our Collection
@@ -319,11 +316,7 @@ const Products = () => {
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ amount: 0.6 }}
-              transition={{
-                duration: 1,
-                delay: 0.15,
-                ease: [0.22, 1, 0.36, 1],
-              }}
+              transition={{ duration: 1, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
               className="font-serif text-3xl md:text-5xl text-royal-purple mb-6"
             >
               Elite Saffron
@@ -332,15 +325,15 @@ const Products = () => {
               initial={{ scaleX: 0 }}
               whileInView={{ scaleX: 1 }}
               viewport={{ amount: 0.6 }}
-              transition={{
-                duration: 1.1,
-                delay: 0.3,
-                ease: [0.22, 1, 0.36, 1],
-              }}
+              transition={{ duration: 1.1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="w-24 h-px bg-gradient-to-r from-transparent via-gold to-transparent mx-auto origin-center"
             />
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-8 mb-10">
+
+          {/* ── FILTER BAR ── */}
+          <div className="flex flex-wrap items-center gap-16 mb-10">
+
+            {/* Mobile filter toggle button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="md:hidden flex items-center gap-1.5 px-2 py-1 bg-royal-purple text-ivory text-[10px] uppercase tracking-wider font-bold rounded-full"
@@ -353,85 +346,86 @@ const Products = () => {
                 </span>
               )}
             </button>
-            <div className={`${showFilters ? "flex" : "hidden"} md:flex flex-wrap items-center gap-4 lg:gap-60 w-full md:w-auto`}>
+
+            {/* Filter dropdowns */}
+            <div
+              className={`
+                ${showFilters ? "flex" : "hidden"}
+                md:flex
+                flex-wrap
+                items-center
+                gap-60
+                w-full
+                md:w-auto
+              `}
+            >
+
+              {/* Price Range */}
               <div className="flex flex-col gap-1">
                 <label className="text-sm text-muted-foreground tracking-[0.07em] font-medium font-serif text-royal-purple-dark/80">Price Range</label>
-                <div className="relative group min-w-[150px]">
-
-  {/* BUTTON */}
-  <div className="px-2 py-2 w-[120px] h-[30px] bg-ivory-dark border border-border  text-sm product-desc text-royal-purple flex justify-between items-center cursor-pointer group-hover:border-gold transition">
-    {priceRanges.find(p => p.key === priceFilter)?.label || "All Prices"}
-    <span className="text-gold ml-2"><ChevronDown className="w-4 h-4" /></span>
-  </div>
-
-  {/* DROPDOWN */}
-  <div className="absolute left-0 mt-2 w-full bg-white border border-border w-[130px]  shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-
-    {priceRanges.map((range) => (
-      <div
-        key={range.key}
-        onClick={() => setPriceFilter(range.key)}
-        className="px-2 py-2 text-xs product-desc text-royal-purple hover:bg-royal-purple hover:text-ivory cursor-pointer transition"
-      >
-        {range.label}
-      </div>
-    ))}
-
-  </div>
-</div>
+                <div className="relative group w-full max-w-[180px]">
+                  <div className="px-3 py-2 w-full min-w-[110px] bg-ivory-dark border border-border text-sm product-desc text-royal-purple flex justify-between items-center cursor-pointer group-hover:border-gold transition">
+                    {priceRanges.find(p => p.key === priceFilter)?.label || "All Prices"}
+                    <span className="text-gold ml-2"><ChevronDown className="w-4 h-4" /></span>
+                  </div>
+                  <div className="absolute left-0 mt-2 w-full min-w-[130px] bg-white border border-border shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    {priceRanges.map((range) => (
+                      <div
+                        key={range.key}
+                        onClick={() => setPriceFilter(range.key)}
+                        className="px-3 py-2 text-xs product-desc text-royal-purple hover:bg-royal-purple hover:text-ivory cursor-pointer transition"
+                      >
+                        {range.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
+
+              {/* Rating */}
               <div className="flex flex-col gap-1">
                 <label className="text-sm text-royal-purple-dark/80 tracking-[0.07em] text-muted-foreground font-serif font-medium">Rating</label>
-                <div className="relative group min-w-[130px]">
-
-  {/* BUTTON */}
-  <div className="px-2 py-2 bg-ivory-dark border border-border w-[120px] h-[30px] text-sm product-desc text-royal-purple flex justify-between items-center cursor-pointer group-hover:border-gold transition">
-    {ratingOptions.find(r => r.key === ratingFilter)?.label || "All Ratings"}
-    <ChevronDown className="w-4 h-4 text-gold ml-2" />
-  </div>
-
-  {/* DROPDOWN */}
-  <div className="absolute left-0 mt-2 w-full bg-white border border-border w-[130px]  shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-
-    {ratingOptions.map((option) => (
-  <div
-    key={option.key}
-    onClick={() => setRatingFilter(option.key)}
-    className="px-4 py-2 text-xs product-desc text-royal-purple hover:bg-royal-purple hover:text-ivory cursor-pointer transition"
-  >
-    {option.label}
-  </div>
-))}
-
-  </div>
-</div>
+                <div className="relative group w-full max-w-[180px]">
+                  <div className="px-3 py-2 w-full min-w-[110px] bg-ivory-dark border border-border text-sm product-desc text-royal-purple flex justify-between items-center cursor-pointer group-hover:border-gold transition">
+                    {ratingOptions.find(r => r.key === ratingFilter)?.label || "All Ratings"}
+                    <ChevronDown className="w-4 h-4 text-gold ml-2" />
+                  </div>
+                  <div className="absolute left-0 mt-2 w-full min-w-[130px] bg-white border border-border shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    {ratingOptions.map((option) => (
+                      <div
+                        key={option.key}
+                        onClick={() => setRatingFilter(option.key)}
+                        className="px-3 py-2 text-xs product-desc text-royal-purple hover:bg-royal-purple hover:text-ivory cursor-pointer transition"
+                      >
+                        {option.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
+
+              {/* Type */}
               <div className="flex flex-col gap-1">
                 <label className="text-sm text-royal-purple-dark/80 tracking-[0.07em] text-muted-foreground font-serif font-medium">Type</label>
-                <div className="relative group min-w-[120px]">
-
-  {/* BUTTON */}
-  <div className="px-2 py-2 w-[120px] h-[30px] bg-ivory-dark border border-border  text-sm product-desc text-royal-purple flex justify-between items-center cursor-pointer group-hover:border-gold transition">
-    {saffronTypes.find(t => t.key === typeFilter)?.label || "All Types"}
-    <ChevronDown className="w-4 h-4 text-gold ml-2" />
-  </div>
-
-  {/* DROPDOWN */}
-  <div className="absolute left-0 mt-2 w-full bg-white border border-border w-[130px]  shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-
-    {saffronTypes.map((type) => (
-      <div
-        key={type.key}
-        onClick={() => setTypeFilter(type.key)}
-        className="px-4 py-2 text-xs product-desc text-royal-purple hover:bg-royal-purple hover:text-ivory cursor-pointer transition"
-      >
-        {type.label}
-      </div>
-    ))}
-
-  </div>
-</div>
+                <div className="relative group w-full max-w-[180px]">
+                  <div className="px-3 py-2 w-full min-w-[110px] bg-ivory-dark border border-border text-sm product-desc text-royal-purple flex justify-between items-center cursor-pointer group-hover:border-gold transition">
+                    {saffronTypes.find(t => t.key === typeFilter)?.label || "All Types"}
+                    <ChevronDown className="w-4 h-4 text-gold ml-2" />
+                  </div>
+                  <div className="absolute left-0 mt-2 w-full min-w-[130px] bg-white border border-border shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    {saffronTypes.map((type) => (
+                      <div
+                        key={type.key}
+                        onClick={() => setTypeFilter(type.key)}
+                        className="px-3 py-2 text-xs product-desc text-royal-purple hover:bg-royal-purple hover:text-ivory cursor-pointer transition"
+                      >
+                        {type.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
+
               {activeFiltersCount > 0 && (
                 <button
                   onClick={clearFilters}
@@ -442,55 +436,54 @@ const Products = () => {
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-royal-purple-dark/80 tracking-[0.07em] font-serif text-muted-foreground">Sort by:</span>
-             <div className="relative group min-w-[160px]">
 
-  {/* BUTTON */}
-  <div className="px-2 w-[120px] h-[30px] py-2 bg-ivory-dark border border-border text-sm product-desc text-royal-purple flex justify-between items-center cursor-pointer group-hover:border-gold transition">
-    {
-      {
-        "featured": "Featured",
-        "price-low": "Price: Low to High",
-        "price-high": "Price: High to Low",
-        "rating": "Highest Rated"
-      }[sortBy]
-    }
-    <ChevronDown className="w-4 h-4 text-gold ml-2" />
-  </div>
-
-  {/* DROPDOWN */}
-  <div className="absolute right-0 mt-2 w-full bg-white border border-border w-[150px]  shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-
-    {[
-      { key: "featured", label: "Featured" },
-      { key: "price-low", label: "Price: Low to High" },
-      { key: "price-high", label: "Price: High to Low" },
-      { key: "rating", label: "Highest Rated" },
-    ].map((option) => (
-      <div
-        key={option.key}
-        onClick={() => setSortBy(option.key)}
-        className="px-4 py-2 text-xs product-desc text-royal-purple hover:bg-royal-purple hover:text-ivory cursor-pointer transition"
-      >
-        {option.label}
-      </div>
-    ))}
-
-  </div>
-</div>
+            {/* Sort by */}
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="text-sm text-royal-purple-dark/80 tracking-[0.07em] font-serif text-muted-foreground whitespace-nowrap">Sort by:</span>
+              <div className="relative group w-full max-w-[180px]">
+                <div className="px-3 py-2 w-full min-w-[140px] bg-ivory-dark border border-border text-sm product-desc text-royal-purple flex justify-between items-center cursor-pointer group-hover:border-gold transition">
+                  {
+                    {
+                      "featured": "Featured",
+                      "price-low": "Price: Low to High",
+                      "price-high": "Price: High to Low",
+                      "rating": "Highest Rated"
+                    }[sortBy]
+                  }
+                  <ChevronDown className="w-4 h-4 text-gold ml-2" />
+                </div>
+                <div className="absolute right-0 mt-2 w-full min-w-[150px] bg-white border border-border shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  {[
+                    { key: "featured", label: "Featured" },
+                    { key: "price-low", label: "Price: Low to High" },
+                    { key: "price-high", label: "Price: High to Low" },
+                    { key: "rating", label: "Highest Rated" },
+                  ].map((option) => (
+                    <div
+                      key={option.key}
+                      onClick={() => setSortBy(option.key)}
+                      className="px-3 py-2 text-xs product-desc text-royal-purple hover:bg-royal-purple hover:text-ivory cursor-pointer transition"
+                    >
+                      {option.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
+
           </div>
+
           <p className="text-sm text-royal-purple-dark/50 font-serif text-muted-foreground mb-6">
             {isLoading ? "Loading products..." : `Showing ${filteredProducts.length} product${filteredProducts.length !== 1 ? "s" : ""}`}
           </p>
+
           <div ref={productsGridRef} className="flex flex-wrap justify-center gap-12">
             {isLoading ? (
               [...Array(6)].map((_, i) => (
                 <div key={i} className="w-full md:w-[calc(50%-2rem)] max-w-[550px] h-[500px] bg-gray-100 animate-pulse rounded-3xl" />
               ))
             ) : (
-            filteredProducts.map((product, index) => (
+              filteredProducts.map((product, index) => (
                 <div
                   key={product.id}
                   data-product-index={index}
@@ -562,12 +555,9 @@ const Products = () => {
                         </span>
                       </Button>
                     </div>
-
                   </div>
 
-                  {/* Content */}
                   <div className="p-6">
-                    {/* Rating */}
                     <div className="flex items-center gap-2 mb-2">
                       <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, i) => (
@@ -584,19 +574,14 @@ const Products = () => {
                         ({product.reviews})
                       </span>
                     </div>
-<br/>
-                    {/* Name */}
-                    <h3 className="font-cinzel  text-royal-purple/80 uppercase font-bold  text-[16px] tracking-[0.09em]">
+                    <br />
+                    <h3 className="font-cinzel text-royal-purple/80 uppercase font-bold text-[16px] tracking-[0.09em]">
                       {product.name}
                     </h3>
-
-
-
-                    <p className="product-desc  font-medium text-[14px] text-royal-purple-dark/50 tracking-[0.05em]">
+                    <p className="product-desc font-medium text-[14px] text-royal-purple-dark/50 tracking-[0.05em]">
                       {product.description}
                     </p>
-<br/>
-                    {/* Price */}
+                    <br />
                     <div className="flex items-center gap-2">
                       <span className="font-Outfit text-l font-bold text-brand-gold">
                         ₹{product.price.toLocaleString()}
@@ -609,7 +594,6 @@ const Products = () => {
                     </div>
                   </div>
 
-                  {/* Bottom Accent Line */}
                   <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-gold via-gold-light to-gold scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
                 </div>
               ))
@@ -618,9 +602,7 @@ const Products = () => {
         </div>
       </section>
     </Layout>
-
   );
 };
-
 
 export default Products;

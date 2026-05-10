@@ -9,12 +9,20 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   return (
-    <div className="min-h-screen flex flex-col max-w-full overflow-x-hidden">
+    <div className="min-h-screen flex flex-col overflow-x-hidden">
+      
+      {/* Header */}
       <Header />
-      <main className="flex-grow px-4 md:px-6 lg:px-0">
+
+      {/* Main Content */}
+      <main className="flex-grow">
         {children}
       </main>
+
+      {/* Footer */}
       <Footer />
+
+      {/* Floating Buttons */}
       <FloatingActions />
     </div>
   );
