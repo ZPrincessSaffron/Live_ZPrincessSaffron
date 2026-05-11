@@ -9,7 +9,7 @@ const contactInfo = [
   { icon: MapPin, label: "Our Office", value: "Chennai, India" },
   { icon: Phone, label: "Phone", value: "+91 75388 70577", link: "tel:+91 75388 70577" },
   { icon: Mail, label: "Email", value: "Crocus@zprincesssaffron.com", link: "mailto:Crocus@zprincesssaffron.com" },
-  { icon: Clock, label: "Our Service", value: "24/7",}
+  { icon: Clock, label: "Our Service", value: "24/7", }
 ];
 
 const Contact = () => {
@@ -26,7 +26,8 @@ const Contact = () => {
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
     try {
-      const response = await fetch(`${API_URL}/messages`, {
+      // 1. Save to Database
+      await fetch(`${API_URL}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -39,11 +40,24 @@ const Contact = () => {
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to send");
+      // 2. Email Redirect (Gmail Compose)
+      const gmailSubject = encodeURIComponent(`Contact Inquiry from ${formData.name}`);
+      const gmailBody = encodeURIComponent(
+        `Customer Details:\n` +
+        `------------------\n` +
+        `Name: ${formData.name}\n` +
+        `Email: ${formData.email}\n` +
+        `Phone: ${formData.phone || 'Not provided'}\n\n` +
+        `Message:\n` +
+        `${formData.message}`
+      );
+
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=Crocus@zprincesssaffron.com&su=${gmailSubject}&body=${gmailBody}`;
+      window.open(gmailUrl, "_blank");
 
       toast({
-        title: "Message Sent!",
-        description: "We'll get back to you within 24 hours.",
+        title: "Opening Gmail...",
+        description: "Please complete your message in the new Gmail tab.",
       });
 
       setFormData({
@@ -58,7 +72,7 @@ const Contact = () => {
     } catch {
       toast({
         title: "Error",
-        description: "Failed to send your message. Please try again.",
+        description: "Failed to process your request. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -86,13 +100,13 @@ const Contact = () => {
             variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
           >
             <motion.div
-  animate={{ y: [0, -8, 0] }}
-  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-  className="mt-10 text-gold/80 font-medium text-sm tracking-[0.4em] uppercase"
->
-  ✦ Get In Touch ✦
-</motion.div>
-            
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+              className="mt-10 text-gold/80 font-medium text-sm tracking-[0.4em] uppercase"
+            >
+              ✦ Get In Touch ✦
+            </motion.div>
+
           </motion.p>
 
           <motion.h1
@@ -142,7 +156,7 @@ const Contact = () => {
                 </div>
                 <p className="text-sm uppercase font-medium tracking-wider mb-2">{info.label}</p>
                 <p className="font-cinzel text-[14px] text-royal-purple break-words">{info.value}</p>
-            
+
               </div>
             ))}
           </div>
@@ -192,16 +206,16 @@ const Contact = () => {
 
               <div className="flex justify-center pt-8">
                 <Button
-  variant="royal"
-  type="submit"
-  disabled={isSubmitting}
-  className="!min-w-0 !px-4 !py-2 !h-auto w-auto inline-flex rounded-full"
->
-  <span className="flex items-center gap-2">
-    <Send className="w-3.5 h-3.5" />
-    Send Message
-  </span>
-</Button>
+                  variant="royal"
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="!min-w-0 !px-4 !py-2 !h-auto w-auto inline-flex rounded-full"
+                >
+                  <span className="flex items-center gap-2">
+                    <Send className="w-3.5 h-3.5" />
+                    Send Message
+                  </span>
+                </Button>
               </div>
             </form>
 
@@ -211,14 +225,14 @@ const Contact = () => {
               </p>
               <a href="https://wa.me/+917538870577" target="_blank" rel="noopener noreferrer">
                 <Button
-  variant="royal"
-  className="!min-w-0 !px-4 !py-2 !h-auto w-auto inline-flex rounded-full"
->
-  <span className="flex items-center gap-2">
-    <MessageCircle className="w-3.5 h-3.5" />
-    Chat on WhatsApp
-  </span>
-</Button>
+                  variant="royal"
+                  className="!min-w-0 !px-4 !py-2 !h-auto w-auto inline-flex rounded-full"
+                >
+                  <span className="flex items-center gap-2">
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    Chat on WhatsApp
+                  </span>
+                </Button>
               </a>
             </div>
 
